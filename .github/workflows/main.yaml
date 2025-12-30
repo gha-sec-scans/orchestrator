@@ -6,15 +6,14 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
-        run: |
-          echo "This is the setup"
+      - name: Setup & Cache
+        uses: gha-sec-scans/orchestrator/.github/actions/setup
 
   preflight:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: preflight
         run: |
           echo "This is the preflight"
 
@@ -22,7 +21,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: test
         run: |
           echo "This is the test"
 
@@ -30,7 +29,7 @@ jobs:
     needs: [preflight, test]
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: build
         run: |
           echo "This is the build"
 
@@ -38,9 +37,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: pre-deploy
         run: |
-          echo "This is the setup"
+          echo "This is the pre-deploy"
 
   deploy:
     needs: pre-deploy
@@ -48,4 +47,4 @@ jobs:
     steps:
       - name: Setup
         run: |
-          echo "This is the setup"
+          echo "This is the deploy"

@@ -1,0 +1,57 @@
+name: 'Smart Setup & Cache'
+description: 'Checks if the app uses Maven or Node, installs dependencies and cache'
+inputs:
+  node-version:
+    description: 'Node version'
+    default: '18'
+    required: false
+    
+  java-version:
+    description: 'JDK Version'
+    default: '25'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Detect type of project
+      id: detect
+      shell: bash
+      run: |
+        if [ -f "pom.xml" ]; then
+          echo "type=maven" >> $GITHUB_OUTPUT
+          echo "pom.xml found"
+        elif [ -f "package.json" ]; then
+          echo "type=node" >> $GITHUB_OUTPUT
+          echo "package.json found"
+        else
+          echo "Couldn't find pom.xml or package.json"
+          exit 1
+        fi
+
+    # NODE
+    - name: Setup Node
+      if: steps.detect.outputs.type == 'node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm' 
+
+    - name: Node dependencies
+      if: steps.detect.outputs.type == 'node'
+      shell: bash
+      run: npm ci
+
+    # MAVEN
+    - name: Setup Java
+      if: steps.detect.outputs.type == 'maven'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+        cache: 'maven'
+
+    - name: Maven dependencies
+      if: steps.detect.outputs.type == 'maven'
+      shell: bash
+      run: mvn dependency:go-offline
