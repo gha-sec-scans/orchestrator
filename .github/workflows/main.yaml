@@ -1,0 +1,51 @@
+name: Orchestrator
+on:
+  workflow_call:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the setup"
+
+  preflight:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the preflight"
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the test"
+
+  build:
+    needs: [preflight, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the build"
+
+  pre-deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the setup"
+
+  deploy:
+    needs: pre-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          echo "This is the setup"
