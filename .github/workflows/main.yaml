@@ -6,6 +6,9 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
       - name: Setup & Cache
         uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
