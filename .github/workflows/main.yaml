@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup & Cache
-        uses: gha-sec-scans/orchestrator/.github/actions/setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
   preflight:
     needs: setup
