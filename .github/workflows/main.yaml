@@ -5,20 +5,29 @@ on:
 jobs:
   # LOAD CONFIG
   load-config:
-      runs-on: ubuntu-latest
-      outputs:
-        matrix: ${{ steps.set-matrix.outputs.matrix }}
-        config: ${{ steps.read-config.outputs.content }}
-      steps:
-        - uses: actions/checkout@v6
-        - name: Read Configuration
-          id: read-config
-          run: |
-            content=$(jq -c . gha-sec-scans/orchestrator/.github/configs/tools.json@feature/setup)
-            echo "content=$content" >> $GITHUB_OUTPUT
-            
-            keys=$(jq -c 'keys' gha-sec-scans/orchestrator/.github/configs/tools.json@feature/setup)
-            echo "matrix=$keys" >> $GITHUB_OUTPUT
+        runs-on: ubuntu-latest
+        outputs:
+          matrix: ${{ steps.set-matrix.outputs.matrix }}
+          config: ${{ steps.read-config.outputs.content }}
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              repository: gha-sec-scans/orchestrator 
+              ref: feature/setup           
+              path: orchestrator-conf  
+              sparse-checkout: .github/configs/tools.json 
+              sparse-checkout-cone-mode: false
+
+          - name: Read Configuration
+            id: read-config
+            run: |
+              FILE_PATH="./orchestrator-conf/.github/configs/tools.json"
+              ls -l $FILE_PATH
+              content=$(jq -c . $FILE_PATH)
+              echo "content=$content" >> $GITHUB_OUTPUT
+              
+              keys=$(jq -c 'keys' $FILE_PATH)
+              echo "matrix=$keys" >> $GITHUB_OUTPUT
 
   # PREFLIGHT  
   ## STATIC ANALYSIS
