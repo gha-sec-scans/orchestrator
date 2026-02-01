@@ -14,6 +14,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # 0. Fix Dubious Ownership for Container Environments
+    - name: Configure Git Safe Directory
+      shell: bash
+      run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
     # 1. Run tool
     - name: Run Analysis Tool
       id: scan
@@ -22,7 +26,7 @@ runs:
 
     # 2. Upload SARIF to GitHub Security
     - name: Upload SARIF to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: ${{ inputs.report_file }}
