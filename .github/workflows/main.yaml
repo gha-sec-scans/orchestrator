@@ -7,7 +7,7 @@ jobs:
   load-config:
         runs-on: ubuntu-latest
         outputs:
-          matrix: ${{ steps.set-matrix.outputs.matrix }}
+          matrix: ${{ steps.read.config.outputs.matrix }}
           config: ${{ steps.read-config.outputs.content }}
         steps:
           - uses: actions/checkout@v4
@@ -55,8 +55,12 @@ jobs:
           report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
 
   ## DEEP SAST 
-  deep-sast:
     name: Deep SAST (CodeQL & Sonar)
+      deep-sast:
+    permissions:
+        actions: read
+        contents: read
+        security-events: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -68,7 +72,7 @@ jobs:
 
       # CODEQL
       - name: Init CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: 'java'
           
