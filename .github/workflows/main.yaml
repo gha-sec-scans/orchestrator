@@ -7,7 +7,7 @@ jobs:
   load-config:
         runs-on: ubuntu-latest
         outputs:
-          matrix: ${{ steps.read.config.outputs.matrix }}
+          matrix: ${{ steps.read-config.outputs.matrix }}
           config: ${{ steps.read-config.outputs.content }}
         steps:
           - uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
         run: mvn clean package -DskipTests -B
 
       - name: Analyze CodeQL
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
       # SONARCLOUD
       - name: Sonar Analysis
