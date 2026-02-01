@@ -3,39 +3,113 @@ on:
   workflow_call:
 
 jobs:
-  setup:
+  # LOAD CONFIG
+  load-config:
+      runs-on: ubuntu-latest
+      outputs:
+        matrix: ${{ steps.set-matrix.outputs.matrix }}
+        config: ${{ steps.read-config.outputs.content }}
+      steps:
+        - uses: actions/checkout@v6
+        - name: Read Configuration
+          id: read-config
+          run: |
+            content=$(jq -c . .github/configs/tools.json)
+            echo "content=$content" >> $GITHUB_OUTPUT
+            
+            keys=$(jq -c 'keys' .github/configs/tools.json)
+            echo "matrix=$keys" >> $GITHUB_OUTPUT
+
+  # PREFLIGHT  
+  ## STATIC ANALYSIS
+  static-analysis:
+    name: Scan (${{ matrix.tool }})
+    needs: load-config
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ${{ fromJson(needs.load-config.outputs.matrix) }}
+    
+    container:
+      image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
+      options: --user root 
+
+    steps:
+      - uses: actions/checkout@v6     
+      - name: Run Security Tool
+        uses: ./.github/actions/security-template
+        with:
+          tool_name: ${{ matrix.tool }}
+          command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
+          report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
+
+  ## DEEP SAST 
+  deep-sast:
+    name: Deep SAST (CodeQL & Sonar)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 
       - name: Setup & Cache
+        id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
-  preflight:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: preflight
-        run: |
-          echo "This is the preflight"
+      # CODEQL
+      - name: Init CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'java'
+          
+      - name: Build for CodeQL
+        if: steps.setup.outputs.project-type == 'maven'
+        run: mvn clean package -DskipTests -B
 
+      - name: Analyze CodeQL
+        uses: github/codeql-action/analyze@v3
+
+      # SONARCLOUD
+      - name: Sonar Analysis
+        if: steps.setup.outputs.project-type == 'maven'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=gha-sec-scans_webgoat \
+          -Dsonar.organization=gha-sec-scans \
+          -Dsonar.host.url=https://sonarcloud.io
+
+  # TEST
   test:
-    needs: setup
+    needs: [static-analysis, deep-sast]
     runs-on: ubuntu-latest
     steps:
-      - name: test
-        run: |
-          echo "This is the test"
+      - uses: actions/checkout@v6
+      - name: Setup & Cache
+        id: env-setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
+      - name: Run Tests (Node)
+        if: steps.env-setup.outputs.project-type == 'node'
+        run: npm test
+
+      - name: Run Tests (Maven)
+        if: steps.env-setup.outputs.project-type == 'maven'
+        run: mvn test
+
+  # BUILD
   build:
-    needs: [preflight, test]
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: build
+      - name: pre-deploy
         run: |
-          echo "This is the build"
+          echo "This is the pre-deploy"
 
+
+  #PRE-DEPLOY & DEPLOY
   pre-deploy:
     needs: build
     runs-on: ubuntu-latest

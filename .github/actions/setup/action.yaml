@@ -1,15 +1,19 @@
 name: 'Smart Setup & Cache'
-description: 'Checks if the app uses Maven or Node, installs dependencies and cache'
+description: 'Detects tech stack, installs dependencies and handles caching'
 inputs:
   node-version:
     description: 'Node version'
     default: '18'
     required: false
-    
   java-version:
     description: 'JDK Version'
     default: '25'
     required: false
+
+outputs:
+  project-type:
+    description: "Detected project type (maven or node)"
+    value: ${{ steps.detect.outputs.type }}
 
 runs:
   using: "composite"
@@ -20,29 +24,29 @@ runs:
       run: |
         if [ -f "pom.xml" ]; then
           echo "type=maven" >> $GITHUB_OUTPUT
-          echo "pom.xml found"
+          echo "::notice::Detected Maven Project"
         elif [ -f "package.json" ]; then
           echo "type=node" >> $GITHUB_OUTPUT
-          echo "package.json found"
+          echo "::notice::Detected Node Project"
         else
-          echo "Couldn't find pom.xml or package.json"
+          echo "::error::No valid project file found (pom.xml/package.json)"
           exit 1
         fi
 
-    # NODE
+    # NODE SETUP
     - name: Setup Node
       if: steps.detect.outputs.type == 'node'
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm' 
+        cache: 'npm'
 
-    - name: Node dependencies
+    - name: Install Node Dependencies
       if: steps.detect.outputs.type == 'node'
       shell: bash
-      run: npm ci
+      run: npm ci --prefer-offline
 
-    # MAVEN
+    # MAVEN SETUP
     - name: Setup Java
       if: steps.detect.outputs.type == 'maven'
       uses: actions/setup-java@v4
@@ -51,7 +55,7 @@ runs:
         java-version: ${{ inputs.java-version }}
         cache: 'maven'
 
-    - name: Maven dependencies
+    - name: Resolve Maven Dependencies
       if: steps.detect.outputs.type == 'maven'
       shell: bash
-      run: mvn dependency:go-offline
+      run: mvn dependency:resolve-plugins dependency:go-offline -B
