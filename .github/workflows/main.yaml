@@ -14,10 +14,10 @@ jobs:
         - name: Read Configuration
           id: read-config
           run: |
-            content=$(jq -c . .github/configs/tools.json)
+            content=$(jq -c . gha-sec-scans/orchestrator/.github/configs/tools.json@feature/setup)
             echo "content=$content" >> $GITHUB_OUTPUT
             
-            keys=$(jq -c 'keys' .github/configs/tools.json)
+            keys=$(jq -c 'keys' gha-sec-scans/orchestrator/.github/configs/tools.json@feature/setup)
             echo "matrix=$keys" >> $GITHUB_OUTPUT
 
   # PREFLIGHT  
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6     
       - name: Run Security Tool
-        uses: ./.github/actions/security-template
+        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/setup
         with:
           tool_name: ${{ matrix.tool }}
           command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
