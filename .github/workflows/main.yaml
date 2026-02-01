@@ -54,9 +54,9 @@ jobs:
           command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
           report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
 
-  ## DEEP SAST 
+  ## DEEP SAST    
+  deep-sast:
     name: Deep SAST (CodeQL & Sonar)
-      deep-sast:
     permissions:
         actions: read
         contents: read
