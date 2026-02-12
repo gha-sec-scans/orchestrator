@@ -54,46 +54,46 @@ jobs:
           command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
           report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
 
-  ## DEEP SAST    
-  deep-sast:
-    name: Deep SAST (CodeQL & Sonar)
-    permissions:
-        actions: read
-        contents: read
-        security-events: write
+  ## CodeQL
+  codeql:
+    name: SAST - CodeQL
+    needs: load-config
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0 
       - name: Setup & Cache
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
-      # CODEQL
-      - name: Init CodeQL
-        uses: github/codeql-action/init@v4
+      - name: Run CodeQL Workflow
+        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/setup
         with:
-          languages: 'java'
-          
-      - name: Build for CodeQL
-        if: steps.setup.outputs.project-type == 'maven'
-        run: mvn clean package -DskipTests -B
+          project-type: ${{ steps.setup.outputs.project-type }}
 
-      - name: Analyze CodeQL
-        uses: github/codeql-action/analyze@v4
+  ## Sonar
+  sonar:
+    name: SAST - SonarCloud
+    needs: load-config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # SONARCLOUD
-      - name: Sonar Analysis
-        if: steps.setup.outputs.project-type == 'maven'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-          -Dsonar.projectKey=gha-sec-scans_webgoat \
-          -Dsonar.organization=gha-sec-scans \
-          -Dsonar.host.url=https://sonarcloud.io
+      - name: Setup & Cache
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
+
+      - name: Run Sonar Workflow
+        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/setup
+        with:
+          project-type: ${{ steps.setup.outputs.project-type }}
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # TEST
   test:
@@ -115,7 +115,7 @@ jobs:
 
   # BUILD
   build:
-    needs: [test, static-analysis, deep-sast]
+    needs: [test, static-analysis, codeql, sonar]
     runs-on: ubuntu-latest
     steps:
       - name: pre-deploy
