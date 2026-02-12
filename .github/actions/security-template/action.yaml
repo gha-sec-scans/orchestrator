@@ -14,7 +14,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # 0. Fix Dubious Ownership for Container Environments
+    # 0. Fix Ownership for Container Environments
     - name: Configure Git Safe Directory
       shell: bash
       run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"

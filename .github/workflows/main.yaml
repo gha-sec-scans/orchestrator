@@ -97,7 +97,7 @@ jobs:
 
   # TEST
   test:
-    needs: [static-analysis, deep-sast]
+    needs: load-config
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
