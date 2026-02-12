@@ -24,7 +24,7 @@ runs:
       run: |
         echo "::group::Running ${{ inputs.tool_name }}"
         
-        docker run --rm \
+        docker run --rm --entrypoint "" \
           -v "${{ github.workspace }}:/app" \
           -w /app \
           ${{ inputs.image }} \
