@@ -21,14 +21,15 @@ runs:
     # 1. Run tool via Docker
     - name: Run Analysis Tool (${{ inputs.tool_name }})
       shell: bash
+      continue-on-error: true
       run: |
-        echo "::group::Running ${{ inputs.tool_name }}"
+        echo "Running ${{ inputs.tool_name }}"
         
         docker run --rm --entrypoint "" \
           -v "${{ github.workspace }}:/app" \
           -w /app \
           ${{ inputs.image }} \
-          bash -c "${{ inputs.command }}" || true
+          ${{ inputs.command }}
           
         echo "::endgroup::"
 
