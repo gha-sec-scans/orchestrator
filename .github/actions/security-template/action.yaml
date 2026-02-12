@@ -1,30 +1,38 @@
 name: 'Generic Security Scanner'
-description: 'Runs a security tool and uploads SARIF report'
+description: 'Runs a security tool via Docker and uploads SARIF report'
 inputs:
   command:
-    description: 'Command to execute'
+    description: 'Command to execute inside the container'
     required: true
   report_file:
     description: 'Name of the output SARIF file'
     required: true
   tool_name:
-    description: 'Name of the tool (for categorization)'
+    description: 'Name of the tool'
+    required: true
+  image: 
+    description: 'Docker image to use'
     required: true
 
 runs:
   using: "composite"
   steps:
-    # 0. Fix Ownership for Container Environments
-    - name: Configure Git Safe Directory
-      shell: bash
-      run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-    # 1. Run tool
-    - name: Run Analysis Tool
-      id: scan
-      shell: bash
-      run: ${{ inputs.command }} || true
 
-    # 2. Upload SARIF to GitHub Security
+    # 1. Run tool via Docker
+    - name: Run Analysis Tool (${{ inputs.tool_name }})
+      shell: bash
+      run: |
+        echo "::group::Running ${{ inputs.tool_name }}"
+        
+        docker run --rm \
+          -v "${{ github.workspace }}:/app" \
+          -w /app \
+          ${{ inputs.image }} \
+          ${{ inputs.command }}
+          
+        echo "::endgroup::"
+
+    # 2. Upload SARIF 
     - name: Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v4
       if: always()
