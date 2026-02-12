@@ -115,7 +115,7 @@ jobs:
 
   # BUILD
   build:
-    needs: test
+    needs: [test, static-analysis, deep-sast]
     runs-on: ubuntu-latest
     steps:
       - name: pre-deploy
