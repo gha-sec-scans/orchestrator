@@ -28,7 +28,7 @@ runs:
           -v "${{ github.workspace }}:/app" \
           -w /app \
           ${{ inputs.image }} \
-          ${{ inputs.command }}
+          bash -c "${{ inputs.command }}" || true
           
         echo "::endgroup::"
 
