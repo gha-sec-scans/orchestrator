@@ -1,0 +1,42 @@
+name: 'Generic Security Scanner'
+description: 'Runs a security tool and uploads SARIF report'
+inputs:
+  command:
+    description: 'Command to execute'
+    required: true
+  report_file:
+    description: 'Name of the output SARIF file'
+    required: true
+  tool_name:
+    description: 'Name of the tool (for categorization)'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    # 0. Fix Ownership for Container Environments
+    - name: Configure Git Safe Directory
+      shell: bash
+      run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+    # 1. Run tool
+    - name: Run Analysis Tool
+      id: scan
+      shell: bash
+      run: ${{ inputs.command }} || true
+
+    # 2. Upload SARIF to GitHub Security
+    - name: Upload SARIF to GitHub Security
+      uses: github/codeql-action/upload-sarif@v4
+      if: always()
+      with:
+        sarif_file: ${{ inputs.report_file }}
+        category: ${{ inputs.tool_name }}
+
+    # # 3. Upload Report as Artifact
+    # - name: Archive Report
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: scan-report-${{ inputs.tool_name }}
+    #     path: ${{ inputs.report_file }}
+    #     retention-days: 1

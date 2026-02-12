@@ -1,0 +1,12 @@
+{
+  "gitleaks": {
+    "image": "zricethezav/gitleaks:latest",
+    "command": "gitleaks detect -v --source=. --report-format=sarif --report-path=gitleaks.sarif",
+    "report_file": "gitleaks.sarif"
+  },
+  "trivy": {
+    "image": "aquasec/trivy:latest",
+    "command": "trivy fs . --format sarif --output trivy.sarif",
+    "report_file": "trivy.sarif"
+  }
+}

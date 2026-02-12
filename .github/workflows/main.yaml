@@ -3,44 +3,134 @@ on:
   workflow_call:
 
 jobs:
-  setup:
+  # LOAD CONFIG
+  load-config:
+        runs-on: ubuntu-latest
+        outputs:
+          matrix: ${{ steps.read-config.outputs.matrix }}
+          config: ${{ steps.read-config.outputs.content }}
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              repository: gha-sec-scans/orchestrator 
+              token: ${{ secrets.ORG_GITHUB_TOKEN }}
+              ref: feature/setup           
+              path: orchestrator-conf  
+              sparse-checkout: .github/configs/tools.json 
+              sparse-checkout-cone-mode: false
+
+          - name: Read Configuration
+            id: read-config
+            run: |
+              FILE_PATH="./orchestrator-conf/.github/configs/tools.json"
+              ls -l $FILE_PATH
+              content=$(jq -c . $FILE_PATH)
+              echo "content=$content" >> $GITHUB_OUTPUT
+              
+              keys=$(jq -c 'keys' $FILE_PATH)
+              echo "matrix=$keys" >> $GITHUB_OUTPUT
+
+  # PREFLIGHT  
+  ## STATIC ANALYSIS
+  static-analysis:
+    name: Scan (${{ matrix.tool }})
+    needs: load-config
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ${{ fromJson(needs.load-config.outputs.matrix) }}
+    
+    container:
+      image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
+      options: --user root 
+
+    steps:
+      - uses: actions/checkout@v6     
+      - name: Run Security Tool
+        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/setup
+        with:
+          tool_name: ${{ matrix.tool }}
+          command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
+          report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
+
+  ## CodeQL
+  codeql:
+    name: SAST - CodeQL
+    needs: load-config
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup & Cache
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
+
+      - name: Run CodeQL Workflow
+        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/setup
+        with:
+          project-type: ${{ steps.setup.outputs.project-type }}
+
+  ## Sonar
+  sonar:
+    name: SAST - SonarCloud
+    needs: load-config
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
-        run: |
-          echo "This is the setup"
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-  preflight:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup
-        run: |
-          echo "This is the preflight"
+      - name: Setup & Cache
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
+      - name: Run Sonar Workflow
+        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/setup
+        with:
+          project-type: ${{ steps.setup.outputs.project-type }}
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # TEST
   test:
-    needs: setup
+    needs: load-config
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
-        run: |
-          echo "This is the test"
+      - uses: actions/checkout@v6
+      - name: Setup & Cache
+        id: env-setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/setup
 
+      - name: Run Tests (Node)
+        if: steps.env-setup.outputs.project-type == 'node'
+        run: npm test
+
+      - name: Run Tests (Maven)
+        if: steps.env-setup.outputs.project-type == 'maven'
+        run: mvn test
+
+  # BUILD
   build:
-    needs: [preflight, test]
+    needs: [test, static-analysis, codeql, sonar]
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: pre-deploy
         run: |
-          echo "This is the build"
+          echo "This is the pre-deploy"
 
+
+  #PRE-DEPLOY & DEPLOY
   pre-deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: pre-deploy
         run: |
-          echo "This is the setup"
+          echo "This is the pre-deploy"
 
   deploy:
     needs: pre-deploy
@@ -48,4 +138,4 @@ jobs:
     steps:
       - name: Setup
         run: |
-          echo "This is the setup"
+          echo "This is the deploy"

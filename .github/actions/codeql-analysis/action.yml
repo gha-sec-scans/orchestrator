@@ -1,0 +1,22 @@
+name: 'CodeQL Analysis'
+description: 'Runs GitHub CodeQL SAST'
+inputs:
+  project-type:
+    description: 'maven or node'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Init CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ inputs.project-type == 'maven' && 'java' || 'javascript' }}
+
+    - name: Build for CodeQL (Java)
+      if: inputs.project-type == 'maven'
+      shell: bash
+      run: mvn clean package -DskipTests -B
+
+    - name: Analyze CodeQL
+      uses: github/codeql-action/analyze@v4

@@ -1,0 +1,38 @@
+name: 'SonarCloud Analysis'
+description: 'Runs SonarCloud Scan'
+inputs:
+  project-type:
+    description: 'maven or node'
+    required: true
+  sonar-token:
+    description: 'Sonar Token'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Sonar Analysis (Maven)
+      if: inputs.project-type == 'maven'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SONAR_TOKEN: ${{ inputs.sonar-token }}
+      run: |
+        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        -Dsonar.projectKey=gha-sec-scans_webgoat \
+        -Dsonar.organization=gha-sec-scans \
+        -Dsonar.host.url=https://sonarcloud.io
+
+    - name: Sonar Analysis (Node)
+      if: inputs.project-type == 'node'
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SONAR_TOKEN: ${{ inputs.sonar-token }}
+      with:
+        args: >
+          -Dsonar.organization=gha-sec-scans
+          -Dsonar.projectKey=gha-sec-scans_webgoat

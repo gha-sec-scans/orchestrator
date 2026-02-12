@@ -1,0 +1,61 @@
+name: 'Smart Setup & Cache'
+description: 'Detects tech stack, installs dependencies and handles caching'
+inputs:
+  node-version:
+    description: 'Node version'
+    default: '18'
+    required: false
+  java-version:
+    description: 'JDK Version'
+    default: '25'
+    required: false
+
+outputs:
+  project-type:
+    description: "Detected project type (maven or node)"
+    value: ${{ steps.detect.outputs.type }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Detect type of project
+      id: detect
+      shell: bash
+      run: |
+        if [ -f "pom.xml" ]; then
+          echo "type=maven" >> $GITHUB_OUTPUT
+          echo "::notice::Detected Maven Project"
+        elif [ -f "package.json" ]; then
+          echo "type=node" >> $GITHUB_OUTPUT
+          echo "::notice::Detected Node Project"
+        else
+          echo "::error::No valid project file found (pom.xml/package.json)"
+          exit 1
+        fi
+
+    # NODE SETUP
+    - name: Setup Node
+      if: steps.detect.outputs.type == 'node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install Node Dependencies
+      if: steps.detect.outputs.type == 'node'
+      shell: bash
+      run: npm ci --prefer-offline
+
+    # MAVEN SETUP
+    - name: Setup Java
+      if: steps.detect.outputs.type == 'maven'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+        cache: 'maven'
+
+    - name: Resolve Maven Dependencies
+      if: steps.detect.outputs.type == 'maven'
+      shell: bash
+      run: mvn dependency:resolve-plugins dependency:go-offline -B
