@@ -111,14 +111,51 @@ jobs:
         if: steps.env-setup.outputs.project-type == 'maven'
         run: mvn test
 
-  # BUILD
+# BUILD
   build:
+    name: Build & Artifacts
     needs: [test, static-analysis, codeql, sonar]
     runs-on: ubuntu-latest
     steps:
-      - name: pre-deploy
+      - uses: actions/checkout@v6
+      - name: Setup & Cache
+        id: setup
+        uses: ./.github/actions/setup
+
+      - name: Build Package (Maven)
+        if: steps.setup.outputs.project-type == 'maven'
+        run: mvn clean package -DskipTests -B
+      
+      - name: Build Package (Node)
+        if: steps.setup.outputs.project-type == 'node'
         run: |
-          echo "This is the pre-deploy"
+          npm run build --if-present
+          zip -r release.zip . -x "node_modules/*" ".git/*" ".github/*"
+
+      # SBOM GENERATION
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@0.34.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'cyclonedx'
+          output: 'sbom.json'
+
+      # # UPLOAD ARTIFACTS
+      # - name: Upload Application Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-binary
+      #     path: |
+      #       target/*.jar
+      #       release.zip
+      #     if-no-files-found: ignore
+
+      # - name: Upload SBOM
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: sbom-cyclonedx
+      #     path: sbom.json
 
 
   #PRE-DEPLOY & DEPLOY
