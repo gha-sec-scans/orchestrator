@@ -26,8 +26,8 @@ runs:
         echo "Running ${{ inputs.tool_name }}"
         
         docker run --rm --entrypoint "" \
-          -v "${{ github.workspace }}:/app" \
-          -w /app \
+          -v "${{ github.workspace }}:/code" \
+          -w /code \
           ${{ inputs.image }} \
           ${{ inputs.command }}
           
