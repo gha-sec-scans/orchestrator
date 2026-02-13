@@ -11,17 +11,17 @@
   },
   "semgrep": {
     "image": "semgrep/semgrep:latest",
-    "command": "semgrep scan --config=p/default --sarif --output=semgrep.sarif",
+    "command": "semgrep scan --config=p/default --sarif --output=semgrep.sarif /app",
     "report_file": "semgrep.sarif"
-  },
-  "checkov": {
-    "image": "bridgecrew/checkov:latest",
-    "command": "checkov -d . --output sarif --output-file-path .",
-    "report_file": "results_sarif.sarif"
   },
   "kics": {
     "image": "checkmarx/kics:latest",
-    "command": "scan -p . -o . --output-name kics.sarif --report-formats sarif --ignore-on-exit all",
+    "command": "kics scan -p /app -o /app --output-name kics.sarif --report-formats sarif --ignore-on-exit all",
     "report_file": "kics.sarif"
+  },
+  "checkov": {
+    "image": "bridgecrew/checkov:latest",
+    "command": "checkov -d /app --output sarif --output-file-path /app",
+    "report_file": "results_sarif.sarif"
   }
 }
