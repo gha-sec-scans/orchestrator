@@ -8,5 +8,20 @@
     "image": "aquasec/trivy:latest",
     "command": "trivy fs . --format sarif --output trivy.sarif",
     "report_file": "trivy.sarif"
+  },
+  "semgrep": {
+    "image": "semgrep/semgrep:latest",
+    "command": "semgrep scan --config=p/default --sarif --output=semgrep.sarif /code",
+    "report_file": "semgrep.sarif"
+  },
+  "checkov": {
+    "image": "bridgecrew/checkov:latest",
+    "command": "checkov -d /code --output sarif --output-file-path /code",
+    "report_file": "results_sarif.sarif"
+  },
+  "kics": {
+    "image": "checkmarx/kics:latest",
+    "command": "/app/bin/kics scan -p /code -o /code --output-name kics.sarif --report-formats sarif --ignore-on-exit all",
+    "report_file": "kics.sarif"
   }
 }
