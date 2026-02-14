@@ -137,7 +137,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
-          scan-ref: '.'
+          scan-ref: 'target/webgoat-2025.4-SNAPSHOT.jar'
           format: 'cyclonedx'
           output: 'sbom.json'
 
