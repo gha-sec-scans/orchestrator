@@ -111,7 +111,7 @@ jobs:
         if: steps.setup.outputs.project-type == 'maven'
         run: mvn test
 
-# BUILD
+ # BUILD
   build:
     name: Build & Artifacts
     needs: [test, static-analysis, codeql, sonar]
@@ -124,8 +124,12 @@ jobs:
 
       - name: Build Package (Maven)
         if: steps.setup.outputs.project-type == 'maven'
-        run: mvn clean package -DskipTests -B
-      
+        run: |
+          mvn clean package -DskipTests -B \
+            org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+          
+          mv target/bom.json sbom.json || mv target/bom.xml sbom.json
+
       - name: Build Package (Node)
         if: steps.setup.outputs.project-type == 'node'
         run: |
@@ -134,10 +138,11 @@ jobs:
 
       # SBOM GENERATION
       - name: Generate SBOM
+        if: steps.setup.outputs.project-type == 'node'
         uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
-          scan-ref: 'target/webgoat-2025.4-SNAPSHOT.jar'
+          scan-ref: '.'
           format: 'cyclonedx'
           output: 'sbom.json'
 
