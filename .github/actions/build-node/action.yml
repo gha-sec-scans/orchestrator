@@ -20,14 +20,14 @@ runs:
         format: 'cyclonedx'
         output: 'sbom.json'
 
-    - name: Upload Artifact (Zip)
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-binary
-        path: release.zip
+    # - name: Upload Artifact (Zip)
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: app-binary
+    #     path: release.zip
 
-    - name: Upload SBOM
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom-cyclonedx
-        path: sbom.json
+    # - name: Upload SBOM
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: sbom-cyclonedx
+    #     path: sbom.json

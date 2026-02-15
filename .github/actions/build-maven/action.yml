@@ -14,15 +14,15 @@ runs:
         find target -name "*cyclonedx.json" -o -name "bom.json" -type f | head -n 1 | xargs -I {} cp {} sbom.json
         echo "::endgroup::"
 
-    - name: Upload Artifact (JAR)
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-binary
-        path: target/*.jar
-        if-no-files-found: error
+    # - name: Upload Artifact (JAR)
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: app-binary
+    #     path: target/*.jar
+    #     if-no-files-found: error
 
-    - name: Upload SBOM
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom-cyclonedx
-        path: sbom.json
+    # - name: Upload SBOM
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: sbom-cyclonedx
+    #     path: sbom.json
