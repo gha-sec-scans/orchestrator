@@ -122,45 +122,13 @@ jobs:
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/build
 
-      - name: Build Package (Maven)
+      - name: Run Maven Build Strategy
         if: steps.setup.outputs.project-type == 'maven'
-        run: |
-          mvn clean package -DskipTests -B \
-            org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-          
-          mv target/bom.json sbom.json || mv target/bom.xml sbom.json
+        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/build
 
-      - name: Build Package (Node)
+      - name: Run Node Build Strategy
         if: steps.setup.outputs.project-type == 'node'
-        run: |
-          npm run build --if-present
-          zip -r release.zip . -x "node_modules/*" ".git/*" ".github/*"
-
-      # SBOM GENERATION
-      - name: Generate SBOM
-        if: steps.setup.outputs.project-type == 'node'
-        uses: aquasecurity/trivy-action@0.34.0
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'cyclonedx'
-          output: 'sbom.json'
-
-      # # UPLOAD ARTIFACTS
-      # - name: Upload Application Artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: app-binary
-      #     path: |
-      #       target/*.jar
-      #       release.zip
-      #     if-no-files-found: ignore
-
-      # - name: Upload SBOM
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: sbom-cyclonedx
-      #     path: sbom.json
+        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/build
 
 
   #PRE-DEPLOY & DEPLOY

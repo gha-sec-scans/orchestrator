@@ -1,0 +1,28 @@
+name: 'Build Maven Project'
+description: 'Builds Java project and generates SBOM'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build & Generate SBOM
+      shell: bash
+      run: |
+        echo "::group::Maven Build"
+        mvn clean package -DskipTests -B \
+          org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+        
+        find target -name "*cyclonedx.json" -o -name "bom.json" -type f | head -n 1 | xargs -I {} cp {} sbom.json
+        echo "::endgroup::"
+
+    - name: Upload Artifact (JAR)
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-binary
+        path: target/*.jar
+        if-no-files-found: error
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-cyclonedx
+        path: sbom.json
