@@ -14,7 +14,7 @@ jobs:
             with:
               repository: gha-sec-scans/orchestrator 
               token: ${{ secrets.ORG_GITHUB_TOKEN }}
-              ref: feature/preflight           
+              ref: feature/build           
               path: orchestrator-conf  
               sparse-checkout: .github/configs/tools.json 
               sparse-checkout-cone-mode: false
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run Security Tool
-        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/preflight
+        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/build
         with:
           tool_name: ${{ matrix.tool }}
           image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
@@ -65,10 +65,10 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/preflight
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/build
 
       - name: Run CodeQL Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/preflight
+        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/build
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
 
@@ -84,10 +84,10 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/preflight
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/build
 
       - name: Run Sonar Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/preflight
+        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/build
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
           sonar-token: ${{ secrets.SONAR_TOKEN }}
@@ -100,25 +100,35 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup & Cache
-        id: env-setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/preflight
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/build
 
       - name: Run Tests (Node)
-        if: steps.env-setup.outputs.project-type == 'node'
+        if: steps.setup.outputs.project-type == 'node'
         run: npm test
 
       - name: Run Tests (Maven)
-        if: steps.env-setup.outputs.project-type == 'maven'
+        if: steps.setup.outputs.project-type == 'maven'
         run: mvn test
 
-  # BUILD
+ # BUILD
   build:
+    name: Build & Artifacts
     needs: [test, static-analysis, codeql, sonar]
     runs-on: ubuntu-latest
     steps:
-      - name: pre-deploy
-        run: |
-          echo "This is the pre-deploy"
+      - uses: actions/checkout@v6
+      - name: Setup & Cache
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/build
+
+      - name: Run Maven Build Strategy
+        if: steps.setup.outputs.project-type == 'maven'
+        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/build
+
+      - name: Run Node Build Strategy
+        if: steps.setup.outputs.project-type == 'node'
+        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/build
 
 
   #PRE-DEPLOY & DEPLOY

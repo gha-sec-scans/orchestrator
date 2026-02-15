@@ -1,0 +1,33 @@
+name: 'Build Node Project'
+description: 'Builds Node project and generates SBOM via Trivy'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build & Zip
+      shell: bash
+      run: |
+        echo "::group::Node Build"
+        npm run build --if-present
+        zip -r release.zip . -x "node_modules/*" ".git/*" ".github/*"
+        echo "::endgroup::"
+
+    - name: Generate SBOM (Trivy)
+      uses: aquasecurity/trivy-action@0.29.0
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'cyclonedx'
+        output: 'sbom.json'
+
+    # - name: Upload Artifact (Zip)
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: app-binary
+    #     path: release.zip
+
+    # - name: Upload SBOM
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: sbom-cyclonedx
+    #     path: sbom.json

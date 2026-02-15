@@ -12,6 +12,7 @@ runs:
       uses: github/codeql-action/init@v4
       with:
         languages: ${{ inputs.project-type == 'maven' && 'java' || 'javascript' }}
+        build-mode: ${{ inputs.project-type == 'maven' && 'manual' || 'none' }}
 
     - name: Build for CodeQL (Java)
       if: inputs.project-type == 'maven'
