@@ -18,8 +18,8 @@ runs:
       run: |
         echo "::group::Starting Immutable Container"
         PORT=${{ inputs.app-port }}
-        PATH=${{ inputs.app-path }}
-        CLEAN_PATH=$(echo $PATH | sed 's|^/||')
+        APP_PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
         
         docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
         
@@ -36,8 +36,8 @@ runs:
       run: |
         echo "::group::Running ZAP Baseline"
         PORT=${{ inputs.app-port }}
-        PATH=${{ inputs.app-path }}
-        CLEAN_PATH=$(echo $PATH | sed 's|^/||')
+        APP_PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
         
         TARGET_URL="http://localhost:$PORT/$CLEAN_PATH"
         chmod 777 $(pwd)
