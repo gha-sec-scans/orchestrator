@@ -1,0 +1,56 @@
+name: 'DAST Analysis (OWASP ZAP Docker)'
+description: 'Pulls the built image, starts it, and runs ZAP natively via Docker'
+inputs:
+  app-port:
+    description: 'The port exposed by the application container'
+    required: true
+    default: '8080'
+  image-tag:
+    description: 'The exact Docker image tag to test'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run Application Container
+      shell: bash
+      run: |
+        echo "::group::Starting Immutable Container"
+        
+        PORT=${{ inputs.app-port }}
+        
+        docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
+        
+        echo "Waiting for response on port $PORT..."
+        timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' localhost:$PORT)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' localhost:$PORT)\" != \"302\" ]]; do sleep 5; done" || (docker logs test-app && exit 1)
+        
+        echo "::notice::Application is up and running on port $PORT"
+        echo "::endgroup::"
+
+    - name: Run OWASP ZAP Baseline Scan (Docker)
+      shell: bash
+      run: |
+        echo "::group::Running ZAP Baseline"
+        
+        TARGET_URL=http://localhost:${{ inputs.app-port }}
+        chmod 777 $(pwd)
+        
+        docker run --rm --network host \
+          -v $(pwd):/zap/wrk/:rw \
+          zaproxy/zap-stable zap-baseline.py \
+          -t $TARGET_URL \
+          -r zap-report.html \
+          -I 
+        echo "::endgroup::"
+
+    # - name: Upload ZAP HTML Report
+    #   uses: actions/upload-artifact@v4
+    #   if: always() 
+    #   with:
+    #     name: zap-dast-report
+    #     path: zap-report.html
+
+    - name: Cleanup Container
+      if: always()
+      shell: bash
+      run: docker rm -f test-app || true

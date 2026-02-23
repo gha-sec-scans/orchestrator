@@ -1,7 +1,11 @@
 name: Orchestrator
 on:
   workflow_call:
-
+    inputs:
+      app-port:
+        description: 'Application Port to use'
+        type: string
+        required: true
 jobs:
   # LOAD CONFIG
   load-config:
@@ -95,6 +99,7 @@ jobs:
 
   # TEST
   test:
+    name: Run Tests
     needs: load-config
     runs-on: ubuntu-latest
     steps:
@@ -145,15 +150,35 @@ jobs:
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  #PRE-DEPLOY & DEPLOY
+# PRE-DEPLOY
   pre-deploy:
+    name: DAST Analysis
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read 
     steps:
-      - name: pre-deploy
-        run: |
-          echo "This is the pre-deploy"
+      - uses: actions/checkout@v6
 
+      - name: Setup & Cache
+        id: setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run DAST Analysis
+        uses: gha-sec-scans/orchestrator/.github/actions/dast-zap@feature/predeploy
+        with:
+          app-port: ${{ inputs.app-port }}
+          image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+# DEPLOY
   deploy:
     needs: pre-deploy
     runs-on: ubuntu-latest
