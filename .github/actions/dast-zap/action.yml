@@ -50,6 +50,12 @@ runs:
           -I 
         echo "::endgroup::"
 
+    - name: Run Nuclei DAST Scan
+      uses: projectdiscovery/nuclei-action@v3
+      with:
+        target: http://localhost:${{ inputs.app-port }}${{ inputs.app-path }}
+        json-export: nuclei-report.json
+        markdown-export: nuclei-report.md
         
     # - name: Upload ZAP HTML Report
     #   uses: actions/upload-artifact@v4
