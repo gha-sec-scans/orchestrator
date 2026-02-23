@@ -111,25 +111,39 @@ jobs:
         if: steps.setup.outputs.project-type == 'maven'
         run: mvn test
 
- # BUILD
+# BUILD & PUSH
   build:
-    name: Build & Artifacts
+    name: Build & Push Docker Image
     needs: [test, static-analysis, codeql, sonar]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v6
+
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+        uses: ./.github/actions/setup
 
-      - name: Run Maven Build Strategy
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Maven Build & Push
         if: steps.setup.outputs.project-type == 'maven'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/predeploy
+        uses: ./.github/actions/build-maven
+        with:
+          image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-      - name: Run Node Build Strategy
+      - name: Run Node Build & Push
         if: steps.setup.outputs.project-type == 'node'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/predeploy
-
+        uses: ./.github/actions/build-node
+        with:
+          image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
   #PRE-DEPLOY & DEPLOY
   pre-deploy:
