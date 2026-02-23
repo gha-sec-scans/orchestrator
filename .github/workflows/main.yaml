@@ -6,6 +6,10 @@ on:
         description: 'Application Port to use'
         type: string
         required: true
+      app-path:
+        type: string
+        required: false
+        default: '/'
 jobs:
   # LOAD CONFIG
   load-config:
@@ -176,6 +180,7 @@ jobs:
         uses: gha-sec-scans/orchestrator/.github/actions/dast-zap@feature/predeploy
         with:
           app-port: ${{ inputs.app-port }}
+          app-path: ${{ inputs.app-path }}
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
 # DEPLOY
