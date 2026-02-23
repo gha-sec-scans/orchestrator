@@ -124,7 +124,7 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: ./.github/actions/setup
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -135,13 +135,13 @@ jobs:
 
       - name: Run Maven Build & Push
         if: steps.setup.outputs.project-type == 'maven'
-        uses: ./.github/actions/build-maven
+        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/predeploy
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Run Node Build & Push
         if: steps.setup.outputs.project-type == 'node'
-        uses: ./.github/actions/build-node
+        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/predeploy
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
