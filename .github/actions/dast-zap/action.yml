@@ -1,10 +1,11 @@
-name: 'DAST Analysis (OWASP ZAP Docker)'
-description: 'Pulls the built image, starts it, and runs ZAP natively via Docker'
 inputs:
   app-port:
     description: 'The port exposed by the application container'
     required: true
-    default: '8080'
+  app-path:
+    description: 'The context path of the application'
+    required: false
+    default: '/'
   image-tag:
     description: 'The exact Docker image tag to test'
     required: true
@@ -16,23 +17,29 @@ runs:
       shell: bash
       run: |
         echo "::group::Starting Immutable Container"
-        
         PORT=${{ inputs.app-port }}
+        PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $PATH | sed 's|^/||')
         
         docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
         
-        echo "Waiting for response on port $PORT..."
-        timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' localhost:$PORT)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' localhost:$PORT)\" != \"302\" ]]; do sleep 5; done" || (docker logs test-app && exit 1)
+        HEALTH_URL="http://localhost:$PORT/$CLEAN_PATH"
+        echo "Waiting for response on $HEALTH_URL..."
         
-        echo "::notice::Application is up and running on port $PORT"
+        timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"302\" ]]; do sleep 5; done" || (docker logs test-app && exit 1)
+        
+        echo "::notice::Application is up and running!"
         echo "::endgroup::"
 
     - name: Run OWASP ZAP Baseline Scan (Docker)
       shell: bash
       run: |
         echo "::group::Running ZAP Baseline"
+        PORT=${{ inputs.app-port }}
+        PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $PATH | sed 's|^/||')
         
-        TARGET_URL=http://localhost:${{ inputs.app-port }}
+        TARGET_URL="http://localhost:$PORT/$CLEAN_PATH"
         chmod 777 $(pwd)
         
         docker run --rm --network host \
@@ -43,6 +50,7 @@ runs:
           -I 
         echo "::endgroup::"
 
+        
     # - name: Upload ZAP HTML Report
     #   uses: actions/upload-artifact@v4
     #   if: always() 
