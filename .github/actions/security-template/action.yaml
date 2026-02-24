@@ -13,12 +13,23 @@ inputs:
   image: 
     description: 'Docker image to use'
     required: true
+  dojo_scan_type:
+    description: 'Dojo Scan Type'
+    required: true
+  defectdojo_url:
+    description: 'DefectDojo URL'
+    required: true
+  defectdojo_token:
+    description: 'DefectDojo API Token'
+    required: true
+  defectdojo_product_id:
+    description: 'DefectDojo Product ID'
+    required: true
 
 runs:
   using: "composite"
   steps:
 
-    # 1. Run tool via Docker
     - name: Run Analysis Tool (${{ inputs.tool_name }})
       shell: bash
       continue-on-error: true
@@ -33,7 +44,6 @@ runs:
           
         echo "::endgroup::"
 
-    # 2. Upload SARIF 
     - name: Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v4
       if: always()
@@ -41,11 +51,19 @@ runs:
         sarif_file: ${{ inputs.report_file }}
         category: ${{ inputs.tool_name }}
 
-    # # 3. Upload Report as Artifact
-    # - name: Archive Report
-    #   uses: actions/upload-artifact@v4
-    #   if: always()
-    #   with:
-    #     name: scan-report-${{ inputs.tool_name }}
-    #     path: ${{ inputs.report_file }}
-    #     retention-days: 1
+    - name: Upload to DefectDojo
+      if: always()
+      shell: bash
+      run: |
+        echo "Sending ${{ inputs.report_file }} to DefectDojo..."
+        curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
+             -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
+             -H "Content-Type: multipart/form-data" \
+             -F "active=true" \
+             -F "verified=true" \
+             -F "scan_type=${{ inputs.dojo_scan_type }}" \
+             -F "minimum_severity=Info" \
+             -F "engagement_name=SAST-Matrix-${{ github.run_id }}" \
+             -F "product_id=${{ inputs.defectdojo_product_id }}" \ 
+             -F "file=@${{ inputs.report_file }}" \
+             -F "close_old_findings=true"

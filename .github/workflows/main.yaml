@@ -7,9 +7,15 @@ on:
         type: string
         required: true
       app-path:
+        description: 'Application Path to use'
         type: string
         required: false
         default: '/'
+      defectdojo_product_id:
+        description: 'DefectDojo Product ID'
+        type: string
+        required: true
+
 jobs:
   # LOAD CONFIG
   load-config:
@@ -47,6 +53,10 @@ jobs:
           image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
           command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
           report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
+          dojo_scan_type: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].dojo_scan_type }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_id: ${{ inputs.defectdojo_product_id }}
 
   ## CodeQL
   codeql:
