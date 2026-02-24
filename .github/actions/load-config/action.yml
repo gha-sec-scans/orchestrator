@@ -1,0 +1,48 @@
+name: 'Load Pipeline Configurations'
+description: 'Downloads and parses JSON configuration files for SAST and DAST'
+inputs:
+  org_token:
+    description: 'PAT to access the repository containing the configuration files'
+    required: true
+  config_branch:
+    description: 'Branch from which to download the configuration'
+    default: 'feature/predeploy'
+
+outputs:
+  sast_matrix:
+    description: "SAST tools list"
+    value: ${{ steps.parse.outputs.sast_matrix }}
+  sast_config:
+    description: "SAST tools configuration"
+    value: ${{ steps.parse.outputs.sast_config }}
+  dast_matrix:
+    description: "DAST tools list"
+    value: ${{ steps.parse.outputs.dast_matrix }}
+  dast_config:
+    description: "DAST tools configuration"
+    value: ${{ steps.parse.outputs.dast_config }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download Config Folder
+      uses: actions/checkout@v6
+      with:
+        repository: gha-sec-scans/orchestrator 
+        token: ${{ inputs.org_token }}
+        ref: ${{ inputs.config_branch }}
+        path: orchestrator-conf  
+        sparse-checkout: .github/configs/ 
+        sparse-checkout-cone-mode: false
+
+    - name: Parse JSON Configs
+      id: parse
+      shell: bash
+      run: |
+        SAST_FILE="./orchestrator-conf/.github/configs/tools.json"
+        echo "sast_config=$(jq -c . $SAST_FILE)" >> $GITHUB_OUTPUT
+        echo "sast_matrix=$(jq -c 'keys' $SAST_FILE)" >> $GITHUB_OUTPUT
+        
+        DAST_FILE="./orchestrator-conf/.github/configs/dast-tools.json"
+        echo "dast_config=$(jq -c . $DAST_FILE)" >> $GITHUB_OUTPUT
+        echo "dast_matrix=$(jq -c 'keys' $DAST_FILE)" >> $GITHUB_OUTPUT

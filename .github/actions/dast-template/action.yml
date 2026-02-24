@@ -1,0 +1,65 @@
+name: 'Generic DAST Runner'
+description: 'Starts container and runs a dynamic DAST tool via Docker'
+inputs:
+  tool_name:
+    required: true
+  image:
+    required: true
+  command:
+    required: true
+  report_file:
+    required: true
+  app-port:
+    required: true
+  app-path:
+    default: '/'
+  image-tag:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run Application Container
+      shell: bash
+      run: |
+        PORT=${{ inputs.app-port }}
+        APP_PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
+        
+        docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
+        
+        HEALTH_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
+        timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"302\" ]]; do sleep 5; done" || exit 1
+
+    - name: Run DAST Tool (${{ inputs.tool_name }})
+      shell: bash
+      run: |
+        PORT=${{ inputs.app-port }}
+        APP_PATH=${{ inputs.app-path }}
+        CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
+        TARGET_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
+        
+        FINAL_COMMAND="${{ inputs.command }}"
+        FINAL_COMMAND="${FINAL_COMMAND//<TARGET_URL>/$TARGET_URL}"
+        
+        echo "Running image: ${{ inputs.image }}"
+        echo "With command: $FINAL_COMMAND"
+        
+        chmod 777 $(pwd)
+        
+        docker run --rm --network host \
+          -v $(pwd):/zap/wrk/:rw \
+          -w /zap/wrk/ \
+          ${{ inputs.image }} $FINAL_COMMAND || true
+
+    - name: Upload ${{ inputs.tool_name }} Report
+      uses: actions/upload-artifact@v4
+      if: always() 
+      with:
+        name: dast-report-${{ inputs.tool_name }}
+        path: ${{ inputs.report_file }}
+
+    - name: Cleanup Container
+      if: always()
+      shell: bash
+      run: docker rm -f test-app || true

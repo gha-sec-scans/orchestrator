@@ -1,32 +1,36 @@
-name: 'Build Node Project'
-description: 'Builds Node project and generates SBOM via Trivy'
+name: 'Build Node Project & Push Image'
+description: 'Builds Node project, generates SBOM and pushes Docker Image'
+inputs:
+  image-tag:
+    description: 'Tag for the Docker image'
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Build & Zip
+    - name: Build Node (Transpile)
       shell: bash
       run: |
         echo "::group::Node Build"
         npm run build --if-present
-        zip -r release.zip . -x "node_modules/*" ".git/*" ".github/*"
         echo "::endgroup::"
 
     - name: Generate SBOM (Trivy)
-      uses: aquasecurity/trivy-action@0.29.0
+      uses: aquasecurity/trivy-action@0.34.1
       with:
         scan-type: 'fs'
         scan-ref: '.'
         format: 'cyclonedx'
         output: 'sbom.json'
 
-    # - name: Upload Artifact (Zip)
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: app-binary
-    #     path: release.zip
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: ${{ inputs.image-tag }}
 
-    # - name: Upload SBOM
+    # - name: Upload SBOM Artifact
     #   uses: actions/upload-artifact@v4
     #   with:
     #     name: sbom-cyclonedx

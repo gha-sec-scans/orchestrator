@@ -1,27 +1,29 @@
-name: 'Build Maven Project'
-description: 'Builds Java project and generates SBOM'
+name: 'Build Maven Project & Push Image'
+description: 'Builds Java project, generates SBOM and pushes Docker Image'
+inputs:
+  image-tag:
+    description: 'Tag for the Docker image'
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Build & Generate SBOM
+    - name: Build Java & Generate SBOM
       shell: bash
       run: |
         echo "::group::Maven Build"
-        mvn clean package -DskipTests -B \
-          org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-        
+        mvn clean package -DskipTests -B org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
         find target -name "*cyclonedx.json" -o -name "bom.json" -type f | head -n 1 | xargs -I {} cp {} sbom.json
         echo "::endgroup::"
 
-    # - name: Upload Artifact (JAR)
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: app-binary
-    #     path: target/*.jar
-    #     if-no-files-found: error
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: ${{ inputs.image-tag }}
 
-    # - name: Upload SBOM
+    # - name: Upload SBOM Artifact
     #   uses: actions/upload-artifact@v4
     #   with:
     #     name: sbom-cyclonedx
