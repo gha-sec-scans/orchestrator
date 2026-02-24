@@ -13,30 +13,18 @@ on:
 jobs:
   # LOAD CONFIG
   load-config:
-        runs-on: ubuntu-latest
-        outputs:
-          matrix: ${{ steps.read-config.outputs.matrix }}
-          config: ${{ steps.read-config.outputs.content }}
-        steps:
-          - uses: actions/checkout@v6
-            with:
-              repository: gha-sec-scans/orchestrator 
-              token: ${{ secrets.ORG_GITHUB_TOKEN }}
-              ref: feature/predeploy           
-              path: orchestrator-conf  
-              sparse-checkout: .github/configs/tools.json 
-              sparse-checkout-cone-mode: false
-
-          - name: Read Configuration
-            id: read-config
-            run: |
-              FILE_PATH="./orchestrator-conf/.github/configs/tools.json"
-              ls -l $FILE_PATH
-              content=$(jq -c . $FILE_PATH)
-              echo "content=$content" >> $GITHUB_OUTPUT
-              
-              keys=$(jq -c 'keys' $FILE_PATH)
-              echo "matrix=$keys" >> $GITHUB_OUTPUT
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.get-configs.outputs.sast_matrix }}
+      config: ${{ steps.get-configs.outputs.sast_config }}
+      dast_matrix: ${{ steps.get-configs.outputs.dast_matrix }}
+      dast_config: ${{ steps.get-configs.outputs.dast_config }}
+    steps:
+      - name: Fetch Pipeline Configuration
+        id: get-configs
+        uses: gha-sec-scans/orchestrator/.github/actions/load-config@feature/predeploy
+        with:
+          org_token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
   # PREFLIGHT  
   ## STATIC ANALYSIS
@@ -156,18 +144,18 @@ jobs:
 
 # PRE-DEPLOY
   pre-deploy:
-    name: DAST Analysis
-    needs: build
+    name: DAST (${{ matrix.tool }})
+    needs: [build, load-config]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read 
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ${{ fromJson(needs.load-config.outputs.dast_matrix) }}
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup & Cache
-        id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+      - uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -176,9 +164,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run DAST Analysis
-        uses: gha-sec-scans/orchestrator/.github/actions/dast-zap@feature/predeploy
+      - name: Run DAST Matrix Tool
+        uses: gha-sec-scans/orchestrator/.github/actions/dast-template@feature/predeploy
         with:
+          tool_name: ${{ matrix.tool }}
+          image: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].image }}
+          command: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].command }}
+          report_file: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].report_file }}
           app-port: ${{ inputs.app-port }}
           app-path: ${{ inputs.app-path }}
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}

@@ -1,0 +1,12 @@
+{
+  "zap": {
+    "image": "zaproxy/zap-stable:latest",
+    "command": "zap-baseline.py -t <TARGET_URL> -r zap-report.html -I",
+    "report_file": "zap-report.html"
+  },
+  "nuclei": {
+    "image": "projectdiscovery/nuclei:latest",
+    "command": "-u <TARGET_URL> -markdown-export nuclei-report.md",
+    "report_file": "nuclei-report.md"
+  }
+}
