@@ -28,7 +28,7 @@ runs:
         
         docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
         
-        HEALTH_URL="http://localhost:$PORT/$CLEAN_PATH"
+        HEALTH_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
         timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"302\" ]]; do sleep 5; done" || exit 1
 
     - name: Run DAST Tool (${{ inputs.tool_name }})
@@ -37,7 +37,7 @@ runs:
         PORT=${{ inputs.app-port }}
         APP_PATH=${{ inputs.app-path }}
         CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
-        TARGET_URL="http://localhost:$PORT/$CLEAN_PATH"
+        TARGET_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
         
         FINAL_COMMAND="${{ inputs.command }}"
         FINAL_COMMAND="${FINAL_COMMAND//<TARGET_URL>/$TARGET_URL}"
