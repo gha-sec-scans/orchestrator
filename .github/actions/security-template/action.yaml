@@ -63,7 +63,8 @@ runs:
              -F "verified=true" \
              -F "scan_type=${{ inputs.dojo_scan_type }}" \
              -F "minimum_severity=Info" \
-             -F "engagement_name=SAST-Matrix-${{ github.run_id }}" \
+             -F "engagement_name=${{ inputs.tool_name }}" \
              -F "product_name=${{ inputs.defectdojo_product_name }}" \
              -F "file=@${{ inputs.report_file }}" \
+             -F "auto_create_context=true" \
              -F "close_old_findings=true"
