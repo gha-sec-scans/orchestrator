@@ -6,7 +6,7 @@
   },
   "nuclei": {
     "image": "projectdiscovery/nuclei:latest",
-    "command": "-u <TARGET_URL> -markdown-export nuclei-report.md",
+    "command": "-u <TARGET_URL> -markdown-export nuclei-report.md -mhe 9999",
     "report_file": "nuclei-report.md"
   }
 }
