@@ -22,8 +22,8 @@ inputs:
   defectdojo_token:
     description: 'DefectDojo API Token'
     required: true
-  defectdojo_product_id:
-    description: 'DefectDojo Product ID'
+  defectdojo_product_name:
+    description: 'DefectDojo Product Name'
     required: true
 
 runs:
@@ -64,6 +64,6 @@ runs:
              -F "scan_type=${{ inputs.dojo_scan_type }}" \
              -F "minimum_severity=Info" \
              -F "engagement_name=SAST-Matrix-${{ github.run_id }}" \
-             -F "product_id=${{ inputs.defectdojo_product_id }}" \ 
+             -F "product_name=${{ inputs.defectdojo_product_name }}" \
              -F "file=@${{ inputs.report_file }}" \
              -F "close_old_findings=true"
