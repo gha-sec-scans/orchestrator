@@ -184,6 +184,10 @@ jobs:
           app-port: ${{ inputs.app-port }}
           app-path: ${{ inputs.app-path }}
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          dojo_scan_type: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].dojo_scan_type }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
 # DEPLOY
   deploy:

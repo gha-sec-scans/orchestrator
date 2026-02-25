@@ -1,12 +1,14 @@
 {
   "zap": {
     "image": "zaproxy/zap-stable:latest",
-    "command": "zap-baseline.py -t <TARGET_URL> -r zap-report.html -I",
-    "report_file": "zap-report.html"
+    "command": "zap-baseline.py -t <TARGET_URL> -x zap-report.xml -I",
+    "report_file": "zap-report.xml",
+    "dojo_scan_type": "ZAP Scan"
   },
   "nuclei": {
     "image": "projectdiscovery/nuclei:latest",
-    "command": "-u <TARGET_URL> -markdown-export nuclei-report.md -mhe 9999",
-    "report_file": "nuclei-report.md"
+    "command": "-u <TARGET_URL> -jsonl -o nuclei-report.json -mhe 9999",
+    "report_file": "nuclei-report.json",
+    "dojo_scan_type": "Nuclei Scan"
   }
 }
