@@ -7,9 +7,15 @@ on:
         type: string
         required: true
       app-path:
+        description: 'Application Path to use'
         type: string
         required: false
         default: '/'
+      defectdojo_product_name:
+        description: 'DefectDojo Product Name'
+        type: string
+        required: true
+
 jobs:
   # LOAD CONFIG
   load-config:
@@ -22,7 +28,7 @@ jobs:
     steps:
       - name: Fetch Pipeline Configuration
         id: get-configs
-        uses: gha-sec-scans/orchestrator/.github/actions/load-config@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/load-config@feature/defectdojo
         with:
           org_token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
@@ -41,12 +47,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run Security Tool
-        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/defectdojo
         with:
           tool_name: ${{ matrix.tool }}
           image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
           command: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].command }}
           report_file: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].report_file }}
+          dojo_scan_type: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].dojo_scan_type }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
   ## CodeQL
   codeql:
@@ -61,10 +71,10 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
 
       - name: Run CodeQL Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/defectdojo
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
 
@@ -80,10 +90,10 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
 
       - name: Run Sonar Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/defectdojo
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
           sonar-token: ${{ secrets.SONAR_TOKEN }}
@@ -98,7 +108,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
 
       - name: Run Tests (Node)
         if: steps.setup.outputs.project-type == 'node'
@@ -121,7 +131,7 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -132,13 +142,13 @@ jobs:
 
       - name: Run Maven Build & Push
         if: steps.setup.outputs.project-type == 'maven'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/defectdojo
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Run Node Build & Push
         if: steps.setup.outputs.project-type == 'node'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/defectdojo
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
@@ -165,7 +175,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run DAST Matrix Tool
-        uses: gha-sec-scans/orchestrator/.github/actions/dast-template@feature/predeploy
+        uses: gha-sec-scans/orchestrator/.github/actions/dast-template@feature/defectdojo
         with:
           tool_name: ${{ matrix.tool }}
           image: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].image }}
@@ -174,6 +184,10 @@ jobs:
           app-port: ${{ inputs.app-port }}
           app-path: ${{ inputs.app-path }}
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          dojo_scan_type: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].dojo_scan_type }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
 # DEPLOY
   deploy:

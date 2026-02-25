@@ -6,7 +6,7 @@ inputs:
     required: true
   config_branch:
     description: 'Branch from which to download the configuration'
-    default: 'feature/predeploy'
+    default: 'feature/defectdojo'
 
 outputs:
   sast_matrix:

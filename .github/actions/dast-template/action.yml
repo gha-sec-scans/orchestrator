@@ -15,6 +15,14 @@ inputs:
     default: '/'
   image-tag:
     required: true
+  dojo_scan_type:
+    required: true
+  defectdojo_url:
+    required: true
+  defectdojo_token:
+    required: true
+  defectdojo_product_name:
+    required: true
 
 runs:
   using: "composite"
@@ -33,31 +41,72 @@ runs:
 
     - name: Run DAST Tool (${{ inputs.tool_name }})
       shell: bash
+      continue-on-error: true
+      env:
+        RAW_COMMAND: ${{ inputs.command }}
+        TOOL_IMAGE: ${{ inputs.image }}
       run: |
         PORT=${{ inputs.app-port }}
         APP_PATH=${{ inputs.app-path }}
         CLEAN_PATH=$(echo $APP_PATH | sed 's|^/||')
         TARGET_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
         
-        FINAL_COMMAND="${{ inputs.command }}"
+        AUTH_NAME="DummyHeader"
+        AUTH_VALUE="DummyValue"
+
+        if [ -f "./auth-hook.sh" ]; then
+           echo "Authentication hook found. Executing auth-hook.sh to retrieve authentication details..."
+           chmod +x ./auth-hook.sh
+           
+           AUTH_RESULT=$(./auth-hook.sh 127.0.0.1 $PORT)
+           echo "Authentication result: $AUTH_RESULT"
+           
+           AUTH_NAME=$(echo "$AUTH_RESULT" | cut -d'|' -f1)
+           AUTH_VALUE=$(echo "$AUTH_RESULT" | cut -d'|' -f2)
+        else
+           echo "auth-hook.sh not found, proceeding without authentication."
+        fi
+        
+        FINAL_COMMAND="$RAW_COMMAND"
         FINAL_COMMAND="${FINAL_COMMAND//<TARGET_URL>/$TARGET_URL}"
         
-        echo "Running image: ${{ inputs.image }}"
+        FINAL_COMMAND="${FINAL_COMMAND//<AUTH_HEADER_NAME>/$AUTH_NAME}"
+        FINAL_COMMAND="${FINAL_COMMAND//<AUTH_HEADER_VALUE>/$AUTH_VALUE}"
+        
+        echo "Running image: $TOOL_IMAGE"
         echo "With command: $FINAL_COMMAND"
         
         chmod 777 $(pwd)
         
-        docker run --rm --network host \
-          -v $(pwd):/zap/wrk/:rw \
+        eval "docker run --rm --network host \
+          -v \"$(pwd):/zap/wrk/:rw\" \
           -w /zap/wrk/ \
-          ${{ inputs.image }} $FINAL_COMMAND || true
+          $TOOL_IMAGE $FINAL_COMMAND" || true
+    
+    # - name: Upload ${{ inputs.tool_name }} Report to Artifacts
+    #   uses: actions/upload-artifact@v4
+    #   if: always() 
+    #   with:
+    #     name: dast-report-${{ inputs.tool_name }}
+    #     path: ${{ inputs.report_file }}
 
-    - name: Upload ${{ inputs.tool_name }} Report
-      uses: actions/upload-artifact@v4
-      if: always() 
-      with:
-        name: dast-report-${{ inputs.tool_name }}
-        path: ${{ inputs.report_file }}
+    - name: Upload to DefectDojo
+      if: always()
+      shell: bash
+      run: |
+        echo "Uploading ${{ inputs.report_file }} to DefectDojo..."
+        curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
+             -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
+             -H "Content-Type: multipart/form-data" \
+             -F "active=true" \
+             -F "verified=true" \
+             -F "scan_type=${{ inputs.dojo_scan_type }}" \
+             -F "minimum_severity=Info" \
+             -F "engagement_name=${{ inputs.tool_name }}" \
+             -F "product_name=${{ inputs.defectdojo_product_name }}" \
+             -F "auto_create_context=true" \
+             -F "file=@${{ inputs.report_file }}" \
+             -F "close_old_findings=true"
 
     - name: Cleanup Container
       if: always()

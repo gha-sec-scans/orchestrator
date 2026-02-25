@@ -1,12 +1,14 @@
 {
   "zap": {
     "image": "zaproxy/zap-stable:latest",
-    "command": "zap-baseline.py -t <TARGET_URL> -r zap-report.html -I",
-    "report_file": "zap-report.html"
+    "command": "zap-baseline.py -t <TARGET_URL> -x zap-report.xml -I -z \"-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=req_header -config replacer.full_list(0).matchstr=<AUTH_HEADER_NAME> -config replacer.full_list(0).replacement=<AUTH_HEADER_VALUE>\"",
+    "report_file": "zap-report.xml",
+    "dojo_scan_type": "ZAP Scan"
   },
-  "nuclei": {
-    "image": "projectdiscovery/nuclei:latest",
-    "command": "-u <TARGET_URL> -markdown-export nuclei-report.md -mhe 9999",
-    "report_file": "nuclei-report.md"
+  "nikto": {
+    "image": "ghcr.io/sullo/nikto:latest",
+    "command": "-h <TARGET_URL> -Format xml -o nikto-report.xml",
+    "report_file": "nikto-report.xml",
+    "dojo_scan_type": "Nikto Scan"
   }
 }
