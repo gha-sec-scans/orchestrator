@@ -8,6 +8,14 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Build Node (Transpile)
       shell: bash
       run: |
@@ -23,15 +31,14 @@ runs:
         format: 'cyclonedx'
         output: 'sbom.json'
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v6
       with:
         context: .
         push: true
         tags: ${{ inputs.image-tag }}
-
-    # - name: Upload SBOM Artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: sbom-cyclonedx
-    #     path: sbom.json
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
