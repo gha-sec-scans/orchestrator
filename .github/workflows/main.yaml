@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Fetch Pipeline Configuration
         id: get-configs
-        uses: gha-sec-scans/orchestrator/.github/actions/load-config@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/utils/load-config@feature/refinement
         with:
           org_token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run Security Tool
-        uses: gha-sec-scans/orchestrator/.github/actions/security-template@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/security/sast-template@feature/refinement
         with:
           tool_name: ${{ matrix.tool }}
           image: ${{ fromJson(needs.load-config.outputs.config)[matrix.tool].image }}
@@ -71,10 +71,10 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
 
       - name: Run CodeQL Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/codeql-analysis@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/security/codeql-analysis@feature/refinement
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
 
@@ -90,10 +90,10 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
 
       - name: Run Sonar Workflow
-        uses: gha-sec-scans/orchestrator/.github/actions/sonar-analysis@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/security/sonar-analysis@feature/refinement
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
           sonar-token: ${{ secrets.SONAR_TOKEN }}
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
 
       - name: Run Tests (Node)
         if: steps.setup.outputs.project-type == 'node'
@@ -131,7 +131,7 @@ jobs:
 
       - name: Setup & Cache
         id: setup
-        uses: gha-sec-scans/orchestrator/.github/actions/setup@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -142,13 +142,13 @@ jobs:
 
       - name: Run Maven Build & Push
         if: steps.setup.outputs.project-type == 'maven'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-maven@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/build/maven@feature/refinement
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Run Node Build & Push
         if: steps.setup.outputs.project-type == 'node'
-        uses: gha-sec-scans/orchestrator/.github/actions/build-node@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/build/node@feature/refinement
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
@@ -165,7 +165,7 @@ jobs:
       matrix:
         tool: ${{ fromJson(needs.load-config.outputs.dast_matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -175,7 +175,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run DAST Matrix Tool
-        uses: gha-sec-scans/orchestrator/.github/actions/dast-template@feature/defectdojo
+        uses: gha-sec-scans/orchestrator/.github/actions/security/dast-template@feature/refinement
         with:
           tool_name: ${{ matrix.tool }}
           image: ${{ fromJson(needs.load-config.outputs.dast_config)[matrix.tool].image }}
