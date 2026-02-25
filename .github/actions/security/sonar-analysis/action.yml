@@ -51,8 +51,19 @@ runs:
       shell: bash
       run: |
         echo "Downloading SonarCloud report..."
-                curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?projects=gha-sec-scans_webgoat&ps=500" -o sonar-report.json
-        
+        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?projects=gha-sec-scans_webgoat&ps=500" -o sonar-report.json
+        npm install -g sonar-report
+        sonar-report \
+          --sonarurl="https://sonarcloud.io" \
+          --sonarcomponent="gha-sec-scans_webgoat" \
+          --sonarorganization="gha-sec-scans" \
+          --project="WebGoat" \
+          --application="WebGoat" \
+          --sonartoken="${{ inputs.sonar-token }}" \
+          --allbugs="true" \
+          --fix-missing-rule="true" \
+          --output="sonar-report.html"
+
         echo "Uploading to DefectDojo..."
         curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
              -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
