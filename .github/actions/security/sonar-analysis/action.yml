@@ -51,8 +51,7 @@ runs:
       shell: bash
       run: |
         echo "Downloading SonarCloud report..."
-        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?componentKeys=gha-sec-scans_webgoat&ps=500" -o sonar-report.json
-        
+        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?componentKeys=gha-sec-scans_webgoat&ps=500&types=VULNERABILITY,BUG&additionalFields=rules" -o sonar-report.json
         echo "Uploading to DefectDojo..."
         curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
              -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
