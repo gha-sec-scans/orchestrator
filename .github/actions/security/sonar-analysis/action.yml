@@ -1,5 +1,5 @@
-name: 'SonarCloud Analysis'
-description: 'Runs SonarCloud Scan'
+name: 'SonarCloud Analysis & DefectDojo Sync'
+description: 'Runs SonarCloud Scan and uploads results to DefectDojo'
 inputs:
   project-type:
     description: 'maven or node'
@@ -9,6 +9,12 @@ inputs:
     required: true
   github-token:
     description: 'GitHub Token'
+    required: true
+  defectdojo_url:
+    required: true
+  defectdojo_token:
+    required: true
+  defectdojo_product_name:
     required: true
 
 runs:
@@ -24,7 +30,8 @@ runs:
         mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
         -Dsonar.projectKey=gha-sec-scans_webgoat \
         -Dsonar.organization=gha-sec-scans \
-        -Dsonar.host.url=https://sonarcloud.io
+        -Dsonar.host.url=https://sonarcloud.io \
+        -Dsonar.qualitygate.wait=true 
 
     - name: Sonar Analysis (Node)
       if: inputs.project-type == 'node'
@@ -36,3 +43,23 @@ runs:
         args: >
           -Dsonar.organization=gha-sec-scans
           -Dsonar.projectKey=gha-sec-scans_webgoat
+          -Dsonar.qualitygate.wait=true 
+    - name: Pull from SonarCloud & Push to DefectDojo
+      shell: bash
+      run: |
+        echo "Downloading SonarCloud report..."
+        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?componentKeys=gha-sec-scans_webgoat&ps=500" -o sonar-report.json
+        
+        echo "Uploading to DefectDojo..."
+        curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
+             -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
+             -H "Content-Type: multipart/form-data" \
+             -F "active=true" \
+             -F "verified=true" \
+             -F "scan_type=SonarQube API Import" \
+             -F "minimum_severity=Info" \
+             -F "engagement_name=sonar" \
+             -F "product_name=${{ inputs.defectdojo_product_name }}" \
+             -F "auto_create_context=true" \
+             -F "file=@sonar-report.json" \
+             -F "close_old_findings=true"
