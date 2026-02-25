@@ -7,12 +7,12 @@
   },
   "nuclei": {
     "image": "projectdiscovery/nuclei:latest",
-    "command": "-u <TARGET_URL> -H \"<AUTH_HEADER_NAME>: <AUTH_HEADER_VALUE>\" -jsonl -o nuclei-report.json",
+    "command": "-u <TARGET_URL> -H \"<AUTH_HEADER_NAME>: <AUTH_HEADER_VALUE>\" -jsonl -o nuclei-report.json -ni",
     "report_file": "nuclei-report.json",
     "dojo_scan_type": "Nuclei Scan"
   },
   "nikto": {
-    "image": "sullo/nikto:latest",
+    "image": "ghcr.io/sullo/nikto:latest",
     "command": "-h <TARGET_URL> -Format xml -o nikto-report.xml",
     "report_file": "nikto-report.xml",
     "dojo_scan_type": "Nikto Scan"
