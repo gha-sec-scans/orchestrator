@@ -5,12 +5,6 @@
     "report_file": "zap-report.xml",
     "dojo_scan_type": "ZAP Scan"
   },
-  "wapiti": {
-    "image": "ghcr.io/wapiti-scanner/wapiti:3.2.10",
-    "command": "-u <TARGET_URL> -c cookies.json -H \"<AUTH_HEADER_NAME>: <AUTH_HEADER_VALUE>\" -f xml -o wapiti-report.xml",
-    "report_file": "wapiti-report.xml",
-    "dojo_scan_type": "Wapiti Scan"
-  },
   "nikto": {
     "image": "ghcr.io/sullo/nikto:latest",
     "command": "-h <TARGET_URL> -Format xml -o nikto-report.xml",
