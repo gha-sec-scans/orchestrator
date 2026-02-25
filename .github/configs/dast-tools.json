@@ -5,11 +5,11 @@
     "report_file": "zap-report.xml",
     "dojo_scan_type": "ZAP Scan"
   },
-  "nuclei": {
-    "image": "projectdiscovery/nuclei:latest",
-    "command": "-u <TARGET_URL> -H \"<AUTH_HEADER_NAME>: <AUTH_HEADER_VALUE>\" -jsonl -o nuclei-report.json -ni",
-    "report_file": "nuclei-report.json",
-    "dojo_scan_type": "Nuclei Scan"
+  "wapiti": {
+    "image": "cybertest/wapiti:latest",
+    "command": "-u <TARGET_URL> -c cookies.json -H \"<AUTH_HEADER_NAME>: <AUTH_HEADER_VALUE>\" -f xml -o wapiti-report.xml",
+    "report_file": "wapiti-report.xml",
+    "dojo_scan_type": "Wapiti Scan"
   },
   "nikto": {
     "image": "ghcr.io/sullo/nikto:latest",
