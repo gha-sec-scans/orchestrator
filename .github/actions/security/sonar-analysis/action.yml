@@ -60,8 +60,6 @@ runs:
           --project="WebGoat" \
           --application="WebGoat" \
           --sonartoken="${{ inputs.sonar-token }}" \
-          --allbugs="true" \
-          --fix-missing-rule="true" \
           --output="sonar-report.html"
 
         echo "Uploading to DefectDojo..."
