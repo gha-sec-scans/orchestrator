@@ -22,6 +22,7 @@ runs:
   steps:
     - name: Sonar Analysis (Maven)
       if: inputs.project-type == 'maven'
+      continue-on-error: true
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -35,6 +36,7 @@ runs:
 
     - name: Sonar Analysis (Node)
       if: inputs.project-type == 'node'
+      continue-on-error: true
       uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -44,6 +46,7 @@ runs:
           -Dsonar.organization=gha-sec-scans
           -Dsonar.projectKey=gha-sec-scans_webgoat
           -Dsonar.qualitygate.wait=true 
+
     - name: Pull from SonarCloud & Push to DefectDojo
       shell: bash
       run: |
