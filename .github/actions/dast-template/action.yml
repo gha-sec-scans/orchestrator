@@ -42,6 +42,9 @@ runs:
     - name: Run DAST Tool (${{ inputs.tool_name }})
       shell: bash
       continue-on-error: true
+      env:
+        RAW_COMMAND: ${{ inputs.command }}
+        TOOL_IMAGE: ${{ inputs.image }}
       run: |
         PORT=${{ inputs.app-port }}
         APP_PATH=${{ inputs.app-path }}
@@ -50,7 +53,7 @@ runs:
         
         AUTH_NAME="DummyHeader"
         AUTH_VALUE="DummyValue"
-        # =========================================================
+
         if [ -f "./auth-hook.sh" ]; then
            echo "Authentication hook found. Executing auth-hook.sh to retrieve authentication details..."
            chmod +x ./auth-hook.sh
@@ -63,23 +66,22 @@ runs:
         else
            echo "auth-hook.sh not found, proceeding without authentication."
         fi
-        # =========================================================
         
-        FINAL_COMMAND="${{ inputs.command }}"
+        FINAL_COMMAND="$RAW_COMMAND"
         FINAL_COMMAND="${FINAL_COMMAND//<TARGET_URL>/$TARGET_URL}"
         
         FINAL_COMMAND="${FINAL_COMMAND//<AUTH_HEADER_NAME>/$AUTH_NAME}"
         FINAL_COMMAND="${FINAL_COMMAND//<AUTH_HEADER_VALUE>/$AUTH_VALUE}"
         
-        echo "Running image: ${{ inputs.image }}"
+        echo "Running image: $TOOL_IMAGE"
         echo "With command: $FINAL_COMMAND"
         
         chmod 777 $(pwd)
         
-        docker run --rm --network host \
-          -v $(pwd):/zap/wrk/:rw \
+        eval "docker run --rm --network host \
+          -v \"$(pwd):/zap/wrk/:rw\" \
           -w /zap/wrk/ \
-          ${{ inputs.image }} $FINAL_COMMAND || true
+          $TOOL_IMAGE $FINAL_COMMAND" || true
     
     # - name: Upload ${{ inputs.tool_name }} Report to Artifacts
     #   uses: actions/upload-artifact@v4
