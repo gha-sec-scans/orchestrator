@@ -50,17 +50,18 @@ runs:
     - name: Pull from SonarCloud & Push to DefectDojo
       shell: bash
       run: |
-        echo "Downloading SonarCloud report..."
-        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?componentKeys=gha-sec-scans_webgoat&ps=500&types=VULNERABILITY,BUG&additionalFields=rules" -o sonar-report.json
-        echo "Uploading to DefectDojo..."
+        echo "📥 Descargando vulnerabilidades desde la API de SonarCloud..."
+        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?componentKeys=gha-sec-scans_webgoat&ps=500&additionalFields=rules" -o sonar-report.json
+        
+        echo "🚀 Subiendo sonar-report.json a DefectDojo..."
         curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
              -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
              -H "Content-Type: multipart/form-data" \
              -F "active=true" \
              -F "verified=true" \
-             -F "scan_type=SonarQube API Import" \
+             -F "scan_type=SonarQube Scan detailed" \ 
              -F "minimum_severity=Info" \
-             -F "engagement_name=sonar" \
+             -F "engagement_name=SonarCloud" \
              -F "product_name=${{ inputs.defectdojo_product_name }}" \
              -F "auto_create_context=true" \
              -F "file=@sonar-report.json" \
