@@ -32,17 +32,17 @@ runs:
         token: ${{ inputs.org_token }}
         ref: ${{ inputs.config_branch }}
         path: orchestrator-conf  
-        sparse-checkout: .github/configs/ 
+        sparse-checkout: .github/tool-config/
         sparse-checkout-cone-mode: false
 
     - name: Parse JSON Configs
       id: parse
       shell: bash
       run: |
-        SAST_FILE="./orchestrator-conf/.github/configs/tools.json"
+        SAST_FILE="./orchestrator-conf/.github/tool-config/sast-tools.json"
         echo "sast_config=$(jq -c . $SAST_FILE)" >> $GITHUB_OUTPUT
         echo "sast_matrix=$(jq -c 'keys' $SAST_FILE)" >> $GITHUB_OUTPUT
         
-        DAST_FILE="./orchestrator-conf/.github/configs/dast-tools.json"
+        DAST_FILE="./orchestrator-conf/.github/tool-config/dast-tools.json"
         echo "dast_config=$(jq -c . $DAST_FILE)" >> $GITHUB_OUTPUT
         echo "dast_matrix=$(jq -c 'keys' $DAST_FILE)" >> $GITHUB_OUTPUT
