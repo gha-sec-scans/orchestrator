@@ -30,6 +30,7 @@ jobs:
         id: get-configs
         uses: gha-sec-scans/orchestrator/.github/actions/utils/load-config@feature/refinement
         with:
+          config_branch: ${{ github.ref_name }}
           org_token: ${{ secrets.ORG_GITHUB_TOKEN }}
 
   # PREFLIGHT  
