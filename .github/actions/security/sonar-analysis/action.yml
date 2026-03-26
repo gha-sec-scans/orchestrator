@@ -68,7 +68,7 @@ runs:
       with:
         defectdojo_url: ${{ inputs.defectdojo_url }}
         defectdojo_token: ${{ inputs.defectdojo_token }}
-        report_file: ${{ inputs.report_file }} 
-        scan_type: ${{ inputs.dojo_scan_type }}
-        engagement_name: ${{ inputs.tool_name }}
+        report_file: 'sonar-report.json'              
+        scan_type: 'SonarQube Scan'                   
+        engagement_name: 'SonarCloud'  
         product_name: ${{ inputs.defectdojo_product_name }}
