@@ -121,7 +121,7 @@ jobs:
         if: steps.setup.outputs.project-type == 'maven'
         run: mvn test
 
-# BUILD & PUSH
+  # BUILD & PUSH
   build:
     name: Build & Push Docker Image
     needs: [test, static-analysis, codeql, sonar]
@@ -155,10 +155,30 @@ jobs:
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-# PRE-DEPLOY
+  ## IMAGE SCANNING       
+  image-scanning:
+    name: Container Image Scan
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run Image Scanning
+        uses: gha-sec-scans/orchestrator/.github/actions/security/image-scanning@feature/refinement
+        with:
+          image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
+
+  # PRE-DEPLOY
   pre-deploy:
     name: DAST (${{ matrix.tool }})
-    needs: [build, load-config]
+    needs: [image-scanning]
     runs-on: ubuntu-latest
     permissions:
       contents: read
