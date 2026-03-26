@@ -158,7 +158,7 @@ jobs:
 
   ## IMAGE SCANNING       
   image-scanning:
-    name: Container Image Scan
+    name: Container Image Scanning
     needs: build
     runs-on: ubuntu-latest
     permissions:
