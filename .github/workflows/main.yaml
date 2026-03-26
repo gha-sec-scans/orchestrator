@@ -179,7 +179,7 @@ jobs:
   # PRE-DEPLOY
   pre-deploy:
     name: DAST (${{ matrix.tool }})
-    needs: [image-scanning]
+    needs: [image-scanning, load-config]
     runs-on: ubuntu-latest
     permissions:
       contents: read
