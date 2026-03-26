@@ -37,18 +37,16 @@ runs:
         ignore-unfixed: true
       continue-on-error: true
 
+    - name: Upload to DefectDojo
+      if: always()
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@feature/refinement
+      with:
+        defectdojo_url: ${{ inputs.defectdojo_url }}
+        defectdojo_token: ${{ inputs.defectdojo_token }}
+        report_file: "trivy-image-results.sarif"
+        engagement_name: "Container Image Security"
+        product_name: ${{ inputs.defectdojo_product_name }}
     - name: Upload Trivy results to DefectDojo
       shell: bash
       run: |
-        curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
-             -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
-             -H "Content-Type: multipart/form-data" \
-             -F "active=true" \
-             -F "verified=true" \
-             -F "scan_type=Trivy Scan" \
-             -F "minimum_severity=Info" \
-             -F "engagement_name=Container Image Security" \
-             -F "product_name=${{ inputs.defectdojo_product_name }}" \
-             -F "auto_create_context=true" \
-             -F "file=@trivy-image-results.sarif" \
              -F "close_old_findings=true"
