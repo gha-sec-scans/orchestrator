@@ -6,7 +6,7 @@
     "dojo_scan_type": "Gitleaks Scan"
   },
   "trivy": {
-    "image": "aquasec/trivy:0.69.3 ",
+    "image": "aquasec/trivy:0.69.3",
     "command": "trivy fs . --format json --output trivy.json",
     "report_file": "trivy.json",
     "dojo_scan_type": "Trivy Scan"
