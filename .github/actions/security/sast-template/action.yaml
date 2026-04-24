@@ -53,18 +53,11 @@ runs:
 
     - name: Upload to DefectDojo
       if: always()
-      shell: bash
-      run: |
-        echo "Sending ${{ inputs.report_file }} to DefectDojo..."
-        curl -X POST "${{ inputs.defectdojo_url }}/api/v2/import-scan/" \
-             -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
-             -H "Content-Type: multipart/form-data" \
-             -F "active=true" \
-             -F "verified=true" \
-             -F "scan_type=${{ inputs.dojo_scan_type }}" \
-             -F "minimum_severity=Info" \
-             -F "engagement_name=${{ inputs.tool_name }}" \
-             -F "product_name=${{ inputs.defectdojo_product_name }}" \
-             -F "file=@${{ inputs.report_file }}" \
-             -F "auto_create_context=true" \
-             -F "close_old_findings=true"
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@feature/refinement
+      with:
+        defectdojo_url: ${{ inputs.defectdojo_url }}
+        defectdojo_token: ${{ inputs.defectdojo_token }}
+        report_file: ${{ inputs.report_file }} 
+        scan_type: ${{ inputs.dojo_scan_type }}
+        engagement_name: ${{ inputs.tool_name }}
+        product_name: ${{ inputs.defectdojo_product_name }}

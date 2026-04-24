@@ -8,6 +8,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2-
+
     - name: Build Java & Generate SBOM
       shell: bash
       run: |
@@ -16,15 +23,14 @@ runs:
         find target -name "*cyclonedx.json" -o -name "bom.json" -type f | head -n 1 | xargs -I {} cp {} sbom.json
         echo "::endgroup::"
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v6
       with:
         context: .
         push: true
         tags: ${{ inputs.image-tag }}
-
-    # - name: Upload SBOM Artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: sbom-cyclonedx
-    #     path: sbom.json
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
