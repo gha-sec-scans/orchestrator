@@ -31,8 +31,8 @@ runs:
       uses: aquasecurity/trivy-action@0.35.0
       with:
         image-ref: ${{ inputs.image-tag }}
-        format: 'sarif'
-        output: 'trivy-image-results.sarif'
+        format: 'json'
+        output: 'trivy-image-results.json'
         severity: 'CRITICAL,HIGH,MEDIUM'
         ignore-unfixed: true
       continue-on-error: true
@@ -43,10 +43,6 @@ runs:
       with:
         defectdojo_url: ${{ inputs.defectdojo_url }}
         defectdojo_token: ${{ inputs.defectdojo_token }}
-        report_file: "trivy-image-results.sarif"
+        report_file: "trivy-image-results.json"
         engagement_name: "Container Image Security"
         product_name: ${{ inputs.defectdojo_product_name }}
-    - name: Upload Trivy results to DefectDojo
-      shell: bash
-      run: |
-             -F "close_old_findings=true"
