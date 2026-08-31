@@ -41,7 +41,7 @@ jobs:
         uses: gha-sec-scans/orchestrator/.github/actions/utils/load-config@feature/refinement
         with:
           config_branch: 'feature/refinement'
-          org_token: ${{ secrets.ORG_GITHUB_TOKEN }}
+          org_token: ${{ secrets.ORG_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
   # PREFLIGHT  
   ## STATIC ANALYSIS
