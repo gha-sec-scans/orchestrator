@@ -15,6 +15,16 @@ on:
         description: 'DefectDojo Product Name'
         type: string
         required: true
+      sonar_organization:
+        description: 'SonarCloud Organization'
+        type: string
+        required: false
+        default: ''
+      sonar_project_key:
+        description: 'SonarCloud Project Key'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   # LOAD CONFIG
@@ -83,6 +93,7 @@ jobs:
   sonar:
     name: SAST - SonarCloud
     needs: load-config
+    if: ${{ inputs.sonar_organization != '' && inputs.sonar_project_key != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -102,6 +113,8 @@ jobs:
           defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
           defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
           defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
+          sonar-organization: ${{ inputs.sonar_organization }}
+          sonar-project-key: ${{ inputs.sonar_project_key }}
 
   # TEST
   test:
@@ -126,6 +139,7 @@ jobs:
   build:
     name: Build & Push Docker Image
     needs: [test, static-analysis, codeql, sonar]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -149,12 +163,18 @@ jobs:
         uses: gha-sec-scans/orchestrator/.github/actions/build/maven@feature/refinement
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
       - name: Run Node Build & Push
         if: steps.setup.outputs.project-type == 'node'
         uses: gha-sec-scans/orchestrator/.github/actions/build/node@feature/refinement
         with:
           image-tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
   ## IMAGE SCANNING       
   image-scanning:

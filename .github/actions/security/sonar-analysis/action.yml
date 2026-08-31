@@ -11,10 +11,19 @@ inputs:
     description: 'GitHub Token'
     required: true
   defectdojo_url:
+    description: 'DefectDojo URL'
     required: true
   defectdojo_token:
+    description: 'DefectDojo API Token'
     required: true
   defectdojo_product_name:
+    description: 'DefectDojo Product Name'
+    required: true
+  sonar-organization:
+    description: 'SonarCloud Organization'
+    required: true
+  sonar-project-key:
+    description: 'SonarCloud Project Key'
     required: true
 
 runs:
@@ -29,8 +38,8 @@ runs:
         SONAR_TOKEN: ${{ inputs.sonar-token }}
       run: |
         mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-        -Dsonar.projectKey=gha-sec-scans_webgoat \
-        -Dsonar.organization=gha-sec-scans \
+        -Dsonar.projectKey=${{ inputs.sonar-project-key }} \
+        -Dsonar.organization=${{ inputs.sonar-organization }} \
         -Dsonar.host.url=https://sonarcloud.io \
         -Dsonar.qualitygate.wait=true 
 
@@ -43,22 +52,22 @@ runs:
         SONAR_TOKEN: ${{ inputs.sonar-token }}
       with:
         args: >
-          -Dsonar.organization=gha-sec-scans
-          -Dsonar.projectKey=gha-sec-scans_webgoat
+          -Dsonar.organization=${{ inputs.sonar-organization }}
+          -Dsonar.projectKey=${{ inputs.sonar-project-key }}
           -Dsonar.qualitygate.wait=true 
 
     - name: Pull from SonarCloud & Push to DefectDojo
       shell: bash
       run: |
         echo "Downloading SonarCloud report..."
-        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?projects=gha-sec-scans_webgoat&ps=500" -o sonar-report.json
+        curl -s -u "${{ inputs.sonar-token }}:" "https://sonarcloud.io/api/issues/search?projects=${{ inputs.sonar-project-key }}&ps=500" -o sonar-report.json
         npm install -g sonar-report
         sonar-report \
           --sonarurl="https://sonarcloud.io" \
-          --sonarcomponent="gha-sec-scans_webgoat" \
-          --sonarorganization="gha-sec-scans" \
-          --project="WebGoat" \
-          --application="WebGoat" \
+          --sonarcomponent="${{ inputs.sonar-project-key }}" \
+          --sonarorganization="${{ inputs.sonar-organization }}" \
+          --project="${{ inputs.sonar-project-key }}" \
+          --application="${{ inputs.sonar-project-key }}" \
           --sonartoken="${{ inputs.sonar-token }}" \
           --output="sonar-report.html"
 
