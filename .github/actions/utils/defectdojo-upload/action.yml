@@ -19,6 +19,10 @@ inputs:
   product_name:
     description: 'Name of the Product in DefectDojo'
     required: true
+  product_type_name:
+    description: 'Product type name in DefectDojo (for auto-creating products)'
+    required: false
+    default: 'Research and Development'
 
 runs:
   using: "composite"
@@ -36,6 +40,7 @@ runs:
              -F "minimum_severity=Info" \
              -F "engagement_name=${{ inputs.engagement_name }}" \
              -F "product_name=${{ inputs.product_name }}" \
+             -F "product_type_name=${{ inputs.product_type_name }}" \
              -F "file=@${{ inputs.report_file }}" \
              -F "auto_create_context=true" \
              -F "close_old_findings=true"
