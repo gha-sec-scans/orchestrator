@@ -88,6 +88,9 @@ jobs:
         uses: gha-sec-scans/orchestrator/.github/actions/security/codeql-analysis@feature/refinement
         with:
           project-type: ${{ steps.setup.outputs.project-type }}
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
 
   ## Sonar
   sonar:

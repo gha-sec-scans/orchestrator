@@ -4,6 +4,15 @@ inputs:
   project-type:
     description: 'maven or node'
     required: true
+  defectdojo_url:
+    description: 'DefectDojo URL'
+    required: true
+  defectdojo_token:
+    description: 'DefectDojo API Token'
+    required: true
+  defectdojo_product_name:
+    description: 'DefectDojo Product Name'
+    required: true
 
 runs:
   using: "composite"
@@ -21,3 +30,29 @@ runs:
 
     - name: Analyze CodeQL
       uses: github/codeql-action/analyze@v4
+      with:
+        output: codeql-results
+      continue-on-error: true
+
+    - name: Prepare CodeQL SARIF report
+      if: always()
+      shell: bash
+      run: |
+        SARIF_FILE=$(find codeql-results ../results -name "*.sarif" 2>/dev/null | head -n 1)
+        if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
+          echo "Found SARIF report: $SARIF_FILE"
+          cp "$SARIF_FILE" codeql-report.sarif
+        else
+          echo "No SARIF file found"
+        fi
+
+    - name: Upload CodeQL to DefectDojo
+      if: always() && hashFiles('codeql-report.sarif') != ''
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@feature/refinement
+      with:
+        defectdojo_url: ${{ inputs.defectdojo_url }}
+        defectdojo_token: ${{ inputs.defectdojo_token }}
+        report_file: "codeql-report.sarif"
+        scan_type: "SARIF"
+        engagement_name: "CodeQL"
+        product_name: ${{ inputs.defectdojo_product_name }}
