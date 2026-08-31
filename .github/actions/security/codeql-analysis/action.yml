@@ -31,20 +31,23 @@ runs:
     - name: Analyze CodeQL
       uses: github/codeql-action/analyze@v4
       with:
-        output: codeql-results
+        output: ${{ github.workspace }}/codeql-results
       continue-on-error: true
 
     - name: Prepare CodeQL SARIF report
       if: always()
       shell: bash
       run: |
-        SARIF_FILE=$(find codeql-results ../results -name "*.sarif" 2>/dev/null | head -n 1)
+        set +e
+        mkdir -p codeql-results
+        SARIF_FILE=$(find "${{ github.workspace }}" "${{ runner.temp }}" -name "*.sarif" 2>/dev/null | head -n 1)
         if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
           echo "Found SARIF report: $SARIF_FILE"
           cp "$SARIF_FILE" codeql-report.sarif
         else
           echo "No SARIF file found"
         fi
+        exit 0
 
     - name: Upload CodeQL to DefectDojo
       if: always() && hashFiles('codeql-report.sarif') != ''
