@@ -1,12 +1,12 @@
 {
   "zap": {
-    "image": "zaproxy/zap-stable:latest",
+    "image": "zaproxy/zap-stable:2.17.0",
     "command": "zap-baseline.py -t <TARGET_URL> -x zap-report.xml -I -z \"-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=req_header -config replacer.full_list(0).matchstr=<AUTH_HEADER_NAME> -config replacer.full_list(0).replacement=<AUTH_HEADER_VALUE>\"",
     "report_file": "zap-report.xml",
     "dojo_scan_type": "ZAP Scan"
   },
   "nikto": {
-    "image": "ghcr.io/sullo/nikto:latest",
+    "image": "ghcr.io/sullo/nikto:2.6.1",
     "command": "-h <TARGET_URL> -Format xml -o nikto-report.xml",
     "report_file": "nikto-report.xml",
     "dojo_scan_type": "Nikto Scan"
