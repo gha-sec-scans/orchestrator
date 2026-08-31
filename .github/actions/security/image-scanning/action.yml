@@ -16,6 +16,10 @@ inputs:
   defectdojo_product_name:
     description: 'DefectDojo Product Name'
     required: true
+  scan_type:
+    description: 'The type of scan to perform'
+    required: true
+
 
 runs:
   using: "composite"
@@ -46,3 +50,4 @@ runs:
         report_file: "trivy-image-results.json"
         engagement_name: "Container Image Security"
         product_name: ${{ inputs.defectdojo_product_name }}
+        scan_type: ${{ inputs.scan_type }}

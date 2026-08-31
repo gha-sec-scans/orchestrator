@@ -175,6 +175,7 @@ jobs:
           defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
           defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
           defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
+          scan_type: "Trivy Image Scanning"
 
   # PRE-DEPLOY
   pre-deploy:
