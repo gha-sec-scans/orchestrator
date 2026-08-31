@@ -7,7 +7,7 @@
   },
   "trivy": {
     "image": "aquasec/trivy:0.74.0",
-    "command": "trivy fs . --format json --output trivy.json",
+    "command": "trivy fs --scanners vuln --offline-scan . --format json --output trivy.json",
     "report_file": "trivy.json",
     "dojo_scan_type": "Trivy Scan"
   },
@@ -24,7 +24,7 @@
     "dojo_scan_type": "Checkov Scan"
   },
   "kics": {
-    "image": "checkmarx/kics:v2.1.21",
+    "image": "checkmarx/kics:v2.1.20",
     "command": "/app/bin/kics scan -p /code -o /code --output-name kics --report-formats json --ignore-on-exit all",
     "report_file": "kics.json",
     "dojo_scan_type": "KICS Scan"
