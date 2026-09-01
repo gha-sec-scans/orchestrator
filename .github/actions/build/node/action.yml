@@ -23,7 +23,19 @@ runs:
       continue-on-error: true
       run: |
         echo "::group::Node Build"
-        npm run build --if-present || true
+        if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+          (cd frontend && npm install && npm run build) || true
+        fi
+
+        if [ -f "tsconfig.json" ]; then
+          npx tsc --noEmitOnError false || npm run build --if-present || true
+        else
+          npm run build --if-present || true
+        fi
+
+        if [ -d "frontend" ] && [ ! -d "frontend/dist" ]; then
+          mkdir -p frontend/dist
+        fi
         echo "::endgroup::"
 
     - name: Generate SBOM (Trivy)
