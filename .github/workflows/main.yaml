@@ -35,6 +35,21 @@ on:
         type: string
         required: false
         default: '25'
+      max_critical:
+        description: 'Maximum allowed active Critical vulnerabilities'
+        type: string
+        required: false
+        default: '0'
+      max_high:
+        description: 'Maximum allowed active High vulnerabilities'
+        type: string
+        required: false
+        default: '0'
+      fail_on_security_gate:
+        description: 'Fail the pipeline if security gate thresholds are breached'
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   # LOAD CONFIG
@@ -263,10 +278,21 @@ jobs:
 
 # DEPLOY
   deploy:
+    name: Security Gate & Deploy
     needs: pre-deploy
     if: ${{ !cancelled() && needs.pre-deploy.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
+      - name: Evaluate Security Quality Gate
+        uses: gha-sec-scans/orchestrator/.github/actions/security/quality-gate@feature/refinement
+        with:
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          defectdojo_token: ${{ secrets.DEFECTDOJO_TOKEN }}
+          defectdojo_product_name: ${{ inputs.defectdojo_product_name }}
+          max_critical: ${{ inputs.max_critical }}
+          max_high: ${{ inputs.max_high }}
+          fail_on_breach: ${{ inputs.fail_on_security_gate }}
+
+      - name: Deploy Application
         run: |
-          echo "This is the deploy"
+          echo "Security Quality Gate passed! Proceeding with deployment..."
