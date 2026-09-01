@@ -161,7 +161,7 @@ jobs:
   build:
     name: Build & Push Docker Image
     needs: [test, static-analysis, codeql, sonar]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: ${{ !cancelled() && needs.test.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -205,6 +205,7 @@ jobs:
   image-scanning:
     name: Container Image Scanning
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -226,6 +227,7 @@ jobs:
   pre-deploy:
     name: DAST (${{ matrix.tool }})
     needs: [image-scanning, load-config]
+    if: ${{ !cancelled() && needs.image-scanning.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -262,6 +264,7 @@ jobs:
 # DEPLOY
   deploy:
     needs: pre-deploy
+    if: ${{ !cancelled() && needs.pre-deploy.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Setup
