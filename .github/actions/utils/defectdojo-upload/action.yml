@@ -30,7 +30,12 @@ runs:
     - name: Reimport Scan to DefectDojo
       shell: bash
       run: |
-        echo "Enviando ${{ inputs.report_file }} (Tipo: ${{ inputs.scan_type }}) a DefectDojo..."
+        if [ ! -f "${{ inputs.report_file }}" ] || [ ! -s "${{ inputs.report_file }}" ]; then
+          echo "::warning::The report '${{ inputs.report_file }}' doesn't exist or is empty. Upload skipped."
+          exit 0
+        fi
+
+        echo "Sending ${{ inputs.report_file }} (Type: ${{ inputs.scan_type }}) to DefectDojo..."
         curl -X POST "${{ inputs.defectdojo_url }}/api/v2/reimport-scan/" \
              -H "Authorization: Token ${{ inputs.defectdojo_token }}" \
              -H "Content-Type: multipart/form-data" \

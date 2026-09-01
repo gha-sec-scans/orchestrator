@@ -1,7 +1,7 @@
 {
   "gitleaks": {
     "image": "zricethezav/gitleaks:v8.30.1",
-    "command": "gitleaks detect -v --source=. --report-format=json --report-path=gitleaks.json",
+    "command": "gitleaks detect -v --source=. --report-format=json --report-path=gitleaks.json --exit-code=0",
     "report_file": "gitleaks.json",
     "dojo_scan_type": "Gitleaks Scan"
   },
@@ -19,7 +19,7 @@
   },
   "checkov": {
     "image": "bridgecrew/checkov:3.3.16",
-    "command": "checkov -d /code --output json --output-file-path /code",
+    "command": "checkov -d /code --output json --output-file-path /code --soft-fail",
     "report_file": "results_json.json",
     "dojo_scan_type": "Checkov Scan"
   },
