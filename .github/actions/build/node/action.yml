@@ -45,6 +45,12 @@ runs:
         engagement_name: "Software Supply Chain (SBOM)"
         product_name: ${{ inputs.defectdojo_product_name }}
 
+    - name: Clean host node_modules before Docker Build
+      shell: bash
+      run: |
+        echo "Cleaning host node_modules to avoid polluting Docker build context..."
+        rm -rf node_modules frontend/node_modules
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
