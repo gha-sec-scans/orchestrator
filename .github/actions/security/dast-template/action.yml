@@ -37,7 +37,25 @@ runs:
         docker run -d --name test-app -p $PORT:$PORT ${{ inputs.image-tag }}
         
         HEALTH_URL="http://127.0.0.1:$PORT/$CLEAN_PATH"
-        timeout 120 bash -c "while [[ \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"200\" && \"\$(curl -s -o /dev/null -w ''%{http_code}'' $HEALTH_URL)\" != \"302\" ]]; do sleep 5; done" || exit 1
+        echo "Waiting for application to become healthy at $HEALTH_URL..."
+
+        READY=false
+        for i in {1..24}; do
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "$HEALTH_URL" 2>/dev/null || true)
+          echo "Health probe ($i/24): HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 500 ]; then
+            READY=true
+            echo "Application is up and responding (HTTP $HTTP_CODE)!"
+            break
+          fi
+          sleep 5
+        done
+
+        if [ "$READY" = false ]; then
+          echo "::error::Application failed to respond within timeout. Container logs:"
+          docker logs test-app || true
+          exit 1
+        fi
 
     - name: Run DAST Tool (${{ inputs.tool_name }})
       shell: bash

@@ -28,7 +28,8 @@ runs:
         fi
 
         if [ -f "tsconfig.json" ]; then
-          npx tsc --noEmitOnError false || npm run build --if-present || true
+          echo "Compiling TypeScript backend..."
+          npx -p typescript tsc --noEmitOnError false || npm run build --if-present || true
         else
           npm run build --if-present || true
         fi
