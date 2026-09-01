@@ -3,7 +3,7 @@ description: 'Detects tech stack, installs dependencies and handles caching'
 inputs:
   node-version:
     description: 'Node version'
-    default: '18'
+    default: '22'
     required: false
   java-version:
     description: 'JDK Version'

@@ -25,6 +25,16 @@ on:
         type: string
         required: false
         default: ''
+      node-version:
+        description: 'Node.js Version'
+        type: string
+        required: false
+        default: '22'
+      java-version:
+        description: 'JDK Version'
+        type: string
+        required: false
+        default: '25'
 
 jobs:
   # LOAD CONFIG
@@ -83,6 +93,9 @@ jobs:
       - name: Setup & Cache
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
+        with:
+          node-version: ${{ inputs.node-version }}
+          java-version: ${{ inputs.java-version }}
 
       - name: Run CodeQL Workflow
         uses: gha-sec-scans/orchestrator/.github/actions/security/codeql-analysis@feature/refinement
@@ -106,6 +119,9 @@ jobs:
       - name: Setup & Cache
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
+        with:
+          node-version: ${{ inputs.node-version }}
+          java-version: ${{ inputs.java-version }}
 
       - name: Run Sonar Workflow
         uses: gha-sec-scans/orchestrator/.github/actions/security/sonar-analysis@feature/refinement
@@ -129,6 +145,9 @@ jobs:
       - name: Setup & Cache
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
+        with:
+          node-version: ${{ inputs.node-version }}
+          java-version: ${{ inputs.java-version }}
 
       - name: Run Tests (Node)
         if: steps.setup.outputs.project-type == 'node'
@@ -153,6 +172,9 @@ jobs:
       - name: Setup & Cache
         id: setup
         uses: gha-sec-scans/orchestrator/.github/actions/utils/setup@feature/refinement
+        with:
+          node-version: ${{ inputs.node-version }}
+          java-version: ${{ inputs.java-version }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
