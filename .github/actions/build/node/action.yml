@@ -45,11 +45,15 @@ runs:
         engagement_name: "Software Supply Chain (SBOM)"
         product_name: ${{ inputs.defectdojo_product_name }}
 
-    - name: Clean host node_modules before Docker Build
+    - name: Prepare Docker Build context
       shell: bash
       run: |
         echo "Cleaning host node_modules to avoid polluting Docker build context..."
         rm -rf node_modules frontend/node_modules
+
+        if [ -f "Dockerfile" ] && grep -q "npm install --omit=dev" Dockerfile && ! grep -q "\--ignore-scripts" Dockerfile; then
+          sed -i 's/npm install --omit=dev/npm install --omit=dev --ignore-scripts/g' Dockerfile
+        fi
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
