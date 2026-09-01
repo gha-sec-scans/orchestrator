@@ -63,6 +63,11 @@ runs:
         echo "Cleaning host node_modules to avoid polluting Docker build context..."
         rm -rf node_modules frontend/node_modules
 
+        if [ -f ".dockerignore" ]; then
+          echo "Adjusting .dockerignore to include precompiled frontend and dist artifacts..."
+          sed -i '/frontend\/dist/d; /^dist\//d' .dockerignore
+        fi
+
         if [ -f "Dockerfile" ] && grep -q "npm install --omit=dev" Dockerfile && ! grep -q "\--ignore-scripts" Dockerfile; then
           sed -i 's/npm install --omit=dev/npm install --omit=dev --ignore-scripts/g' Dockerfile
         fi
