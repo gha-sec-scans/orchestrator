@@ -28,7 +28,7 @@ runs:
 
     - name: Upload SBOM to DefectDojo
       if: always()
-      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@feature/refinement
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@main
       with:
         defectdojo_url: ${{ inputs.defectdojo_url }}
         defectdojo_token: ${{ inputs.defectdojo_token }}

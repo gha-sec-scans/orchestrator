@@ -242,7 +242,7 @@ on:
 
 jobs:
   security-orchestration:
-    uses: gha-sec-scans/orchestrator/.github/workflows/main.yaml@feature/refinement
+    uses: gha-sec-scans/orchestrator/.github/workflows/main.yaml@main
     with:
       app-port: '8080'
       app-path: '/WebGoat'
@@ -268,7 +268,7 @@ on:
 
 jobs:
   security-orchestration:
-    uses: gha-sec-scans/orchestrator/.github/workflows/main.yaml@feature/refinement
+    uses: gha-sec-scans/orchestrator/.github/workflows/main.yaml@main
     with:
       app-port: '3000'
       app-path: '/'

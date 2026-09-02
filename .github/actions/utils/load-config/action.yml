@@ -7,7 +7,7 @@ inputs:
     default: ''
   config_branch:
     description: 'Branch from which to download the configuration'
-    default: 'feature/refinement'
+    default: 'main'
 
 outputs:
   sast_matrix:
