@@ -3,7 +3,7 @@ description: 'Detects tech stack, installs dependencies and handles caching'
 inputs:
   node-version:
     description: 'Node version'
-    default: '18'
+    default: '22'
     required: false
   java-version:
     description: 'JDK Version'
@@ -28,6 +28,17 @@ runs:
         elif [ -f "package.json" ]; then
           echo "type=node" >> $GITHUB_OUTPUT
           echo "::notice::Detected Node Project"
+          
+          if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
+            echo "node-cache=npm" >> $GITHUB_OUTPUT
+            echo "install-cmd=npm ci --prefer-offline" >> $GITHUB_OUTPUT
+          elif [ -f "yarn.lock" ]; then
+            echo "node-cache=yarn" >> $GITHUB_OUTPUT
+            echo "install-cmd=yarn install --prefer-offline" >> $GITHUB_OUTPUT
+          else
+            echo "node-cache=" >> $GITHUB_OUTPUT
+            echo "install-cmd=npm install --prefer-offline" >> $GITHUB_OUTPUT
+          fi
         else
           echo "::error::No valid project file found (pom.xml/package.json)"
           exit 1
@@ -36,20 +47,20 @@ runs:
     # NODE SETUP
     - name: Setup Node
       if: steps.detect.outputs.type == 'node'
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm'
+        cache: ${{ steps.detect.outputs.node-cache }}
 
     - name: Install Node Dependencies
       if: steps.detect.outputs.type == 'node'
       shell: bash
-      run: npm ci --prefer-offline
+      run: ${{ steps.detect.outputs.install-cmd }}
 
     # MAVEN SETUP
     - name: Setup Java
       if: steps.detect.outputs.type == 'maven'
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}

@@ -4,16 +4,19 @@ inputs:
   image-tag:
     description: 'Tag for the Docker image'
     required: true
+  defectdojo_url:
+    description: 'DefectDojo API URL'
+    required: true
+  defectdojo_token:
+    description: 'DefectDojo API Token'
+    required: true
+  defectdojo_product_name:
+    description: 'DefectDojo Product Name'
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2-
 
     - name: Build Java & Generate SBOM
       shell: bash
@@ -23,11 +26,22 @@ runs:
         find target -name "*cyclonedx.json" -o -name "bom.json" -type f | head -n 1 | xargs -I {} cp {} sbom.json
         echo "::endgroup::"
 
+    - name: Upload SBOM to DefectDojo
+      if: always()
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@main
+      with:
+        defectdojo_url: ${{ inputs.defectdojo_url }}
+        defectdojo_token: ${{ inputs.defectdojo_token }}
+        report_file: "sbom.json"
+        scan_type: "CycloneDX Scan"
+        engagement_name: "Software Supply Chain (SBOM)"
+        product_name: ${{ inputs.defectdojo_product_name }}
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         push: true

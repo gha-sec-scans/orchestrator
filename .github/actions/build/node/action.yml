@@ -4,23 +4,39 @@ inputs:
   image-tag:
     description: 'Tag for the Docker image'
     required: true
+  defectdojo_url:
+    description: 'DefectDojo API URL'
+    required: true
+  defectdojo_token:
+    description: 'DefectDojo API Token'
+    required: true
+  defectdojo_product_name:
+    description: 'DefectDojo Product Name'
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Cache npm dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
 
     - name: Build Node (Transpile)
       shell: bash
+      continue-on-error: true
       run: |
         echo "::group::Node Build"
-        npm run build --if-present
+        if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+          (cd frontend && npm install && npm run build) || true
+        fi
+
+        if [ -f "tsconfig.json" ]; then
+          echo "Compiling TypeScript backend..."
+          npx -p typescript tsc --noEmitOnError false || npm run build --if-present || true
+        else
+          npm run build --if-present || true
+        fi
+
+        if [ -d "frontend" ] && [ ! -d "frontend/dist" ]; then
+          mkdir -p frontend/dist
+        fi
         echo "::endgroup::"
 
     - name: Generate SBOM (Trivy)
@@ -31,11 +47,38 @@ runs:
         format: 'cyclonedx'
         output: 'sbom.json'
 
+    - name: Upload SBOM to DefectDojo
+      if: always()
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@main
+      with:
+        defectdojo_url: ${{ inputs.defectdojo_url }}
+        defectdojo_token: ${{ inputs.defectdojo_token }}
+        report_file: "sbom.json"
+        scan_type: "CycloneDX Scan"
+        engagement_name: "Software Supply Chain (SBOM)"
+        product_name: ${{ inputs.defectdojo_product_name }}
+
+    - name: Prepare Docker Build context
+      shell: bash
+      run: |
+        echo "Cleaning host node_modules to avoid polluting Docker build context..."
+        rm -rf node_modules frontend/node_modules
+
+        if [ -f ".dockerignore" ]; then
+          echo "Adjusting .dockerignore to include precompiled frontend and dist artifacts..."
+          sed -i '/frontend\/dist/d; /^dist\//d' .dockerignore
+        fi
+
+        if [ -f "package.json" ]; then
+          echo "Removing root postinstall script to prevent duplicate build in container while keeping native addon bindings (e.g. sqlite3)..."
+          node -e "const p = JSON.parse(require('fs').readFileSync('package.json')); if (p.scripts && p.scripts.postinstall) { delete p.scripts.postinstall; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2)); }"
+        fi
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         push: true

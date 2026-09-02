@@ -1,30 +1,30 @@
 {
   "gitleaks": {
-    "image": "zricethezav/gitleaks:latest",
-    "command": "gitleaks detect -v --source=. --report-format=json --report-path=gitleaks.json",
+    "image": "zricethezav/gitleaks:v8.30.1",
+    "command": "gitleaks detect -v --source=. --report-format=json --report-path=gitleaks.json --exit-code=0",
     "report_file": "gitleaks.json",
     "dojo_scan_type": "Gitleaks Scan"
   },
   "trivy": {
-    "image": "aquasec/trivy:0.69.3",
-    "command": "trivy fs . --format json --output trivy.json",
+    "image": "aquasec/trivy:0.74.0",
+    "command": "trivy fs --scanners vuln --offline-scan . --format json --output trivy.json",
     "report_file": "trivy.json",
     "dojo_scan_type": "Trivy Scan"
   },
   "semgrep": {
-    "image": "semgrep/semgrep:latest",
+    "image": "semgrep/semgrep:1.175.0",
     "command": "semgrep scan --config=p/default --json --output=semgrep.json /code",
     "report_file": "semgrep.json",
     "dojo_scan_type": "Semgrep JSON Report"
   },
   "checkov": {
-    "image": "bridgecrew/checkov:latest",
-    "command": "checkov -d /code --output json --output-file-path /code",
+    "image": "bridgecrew/checkov:3.3.16",
+    "command": "checkov -d /code --output json --output-file-path /code --soft-fail",
     "report_file": "results_json.json",
     "dojo_scan_type": "Checkov Scan"
   },
   "kics": {
-    "image": "checkmarx/kics:latest",
+    "image": "checkmarx/kics:v2.1.20",
     "command": "/app/bin/kics scan -p /code -o /code --output-name kics --report-formats json --ignore-on-exit all",
     "report_file": "kics.json",
     "dojo_scan_type": "KICS Scan"

@@ -16,12 +16,16 @@ inputs:
   defectdojo_product_name:
     description: 'DefectDojo Product Name'
     required: true
+  scan_type:
+    description: 'The type of scan to perform'
+    required: true
+
 
 runs:
   using: "composite"
   steps:
     - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -39,10 +43,11 @@ runs:
 
     - name: Upload to DefectDojo
       if: always()
-      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@feature/refinement
+      uses: gha-sec-scans/orchestrator/.github/actions/utils/defectdojo-upload@main
       with:
         defectdojo_url: ${{ inputs.defectdojo_url }}
         defectdojo_token: ${{ inputs.defectdojo_token }}
         report_file: "trivy-image-results.json"
         engagement_name: "Container Image Security"
         product_name: ${{ inputs.defectdojo_product_name }}
+        scan_type: ${{ inputs.scan_type }}

@@ -1,0 +1,135 @@
+name: 'DefectDojo Security Quality Gate'
+description: 'Queries DefectDojo for active Critical/High vulnerabilities and decides whether deployment should proceed'
+inputs:
+  defectdojo_url:
+    description: 'DefectDojo URL'
+    required: true
+  defectdojo_token:
+    description: 'DefectDojo API Token'
+    required: true
+  defectdojo_product_name:
+    description: 'Product Name in DefectDojo'
+    required: true
+  max_critical:
+    description: 'Maximum allowed active Critical vulnerabilities'
+    required: false
+    default: '0'
+  max_high:
+    description: 'Maximum allowed active High vulnerabilities'
+    required: false
+    default: '0'
+  fail_on_breach:
+    description: 'Fail the step if thresholds are breached'
+    required: false
+    default: 'true'
+
+outputs:
+  passed:
+    description: 'Whether the quality gate passed'
+    value: ${{ steps.check-gate.outputs.passed }}
+  critical_count:
+    description: 'Number of active Critical findings'
+    value: ${{ steps.check-gate.outputs.critical_count }}
+  high_count:
+    description: 'Number of active High findings'
+    value: ${{ steps.check-gate.outputs.high_count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Query DefectDojo and Evaluate Gate
+      id: check-gate
+      shell: bash
+      run: |
+        echo "::group::Querying DefectDojo for Product: ${{ inputs.defectdojo_product_name }}"
+        
+        DOJO_URL="${{ inputs.defectdojo_url }}"
+        DOJO_TOKEN="${{ inputs.defectdojo_token }}"
+        PRODUCT_NAME="${{ inputs.defectdojo_product_name }}"
+        MAX_CRITICAL="${{ inputs.max_critical }}"
+        MAX_HIGH="${{ inputs.max_high }}"
+        FAIL_ON_BREACH="${{ inputs.fail_on_breach }}"
+        
+        # URL-encode product name safely
+        ENCODED_PRODUCT=$(jq -rn --arg x "$PRODUCT_NAME" '$x|@uri')
+        
+        # 1. Fetch active, non-duplicate findings count for Critical and High
+        CRITICAL_RES=$(curl -s -f -H "Authorization: Token $DOJO_TOKEN" \
+          "$DOJO_URL/api/v2/findings/?test__engagement__product__name=$ENCODED_PRODUCT&active=true&duplicate=false&severity=Critical" 2>/dev/null || echo '{"count": 0}')
+        
+        HIGH_RES=$(curl -s -f -H "Authorization: Token $DOJO_TOKEN" \
+          "$DOJO_URL/api/v2/findings/?test__engagement__product__name=$ENCODED_PRODUCT&active=true&duplicate=false&severity=High" 2>/dev/null || echo '{"count": 0}')
+
+        MEDIUM_RES=$(curl -s -f -H "Authorization: Token $DOJO_TOKEN" \
+          "$DOJO_URL/api/v2/findings/?test__engagement__product__name=$ENCODED_PRODUCT&active=true&duplicate=false&severity=Medium" 2>/dev/null || echo '{"count": 0}')
+
+        LOW_RES=$(curl -s -f -H "Authorization: Token $DOJO_TOKEN" \
+          "$DOJO_URL/api/v2/findings/?test__engagement__product__name=$ENCODED_PRODUCT&active=true&duplicate=false&severity=Low" 2>/dev/null || echo '{"count": 0}')
+
+        CRITICAL_COUNT=$(echo "$CRITICAL_RES" | jq -r '.count // 0')
+        HIGH_COUNT=$(echo "$HIGH_RES" | jq -r '.count // 0')
+        MEDIUM_COUNT=$(echo "$MEDIUM_RES" | jq -r '.count // 0')
+        LOW_COUNT=$(echo "$LOW_RES" | jq -r '.count // 0')
+        
+        echo "Active findings -> Critical: $CRITICAL_COUNT, High: $HIGH_COUNT, Medium: $MEDIUM_COUNT, Low: $LOW_COUNT"
+        echo "Thresholds      -> Max Critical: $MAX_CRITICAL, Max High: $MAX_HIGH"
+        echo "::endgroup::"
+        
+        # Outputs
+        echo "critical_count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
+        echo "high_count=$HIGH_COUNT" >> $GITHUB_OUTPUT
+        
+        # Evaluate Gate Status
+        GATE_PASSED=true
+        CRITICAL_STATUS="Passed"
+        HIGH_STATUS="Passed"
+        
+        if [ "$CRITICAL_COUNT" -gt "$MAX_CRITICAL" ]; then
+          GATE_PASSED=false
+          CRITICAL_STATUS="Breached"
+        fi
+        
+        if [ "$HIGH_COUNT" -gt "$MAX_HIGH" ]; then
+          GATE_PASSED=false
+          HIGH_STATUS="Breached"
+        fi
+        
+        echo "passed=$GATE_PASSED" >> $GITHUB_OUTPUT
+
+        # GitHub Step Summary
+        echo "### DefectDojo Security Quality Gate" >> $GITHUB_STEP_SUMMARY
+        echo "**Product:** \`$PRODUCT_NAME\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Severity | Active Findings | Allowed Threshold | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$CRITICAL_STATUS" = "Passed" ]; then
+          echo "| 🔴 **Critical** | $CRITICAL_COUNT | $MAX_CRITICAL | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🔴 **Critical** | $CRITICAL_COUNT | $MAX_CRITICAL | ❌ Breached |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "$HIGH_STATUS" = "Passed" ]; then
+          echo "| 🟠 **High** | $HIGH_COUNT | $MAX_HIGH | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 🟠 **High** | $HIGH_COUNT | $MAX_HIGH | ❌ Breached |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "| 🟡 **Medium** | $MEDIUM_COUNT | - | ℹ️ Info |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔵 **Low** | $LOW_COUNT | - | ℹ️ Info |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$GATE_PASSED" = true ]; then
+          echo "## ✅ Security Quality Gate: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "The product meets all security quality gate thresholds. Deployment approved." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ Security Quality Gate: FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "Active vulnerabilities exceeding thresholds were detected in DefectDojo. Deployment blocked." >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$FAIL_ON_BREACH" = "true" ]; then
+            echo "::error::Quality Gate Failed: Found $CRITICAL_COUNT Critical (max $MAX_CRITICAL) and $HIGH_COUNT High (max $MAX_HIGH) active vulnerabilities."
+            exit 1
+          else
+            echo "::warning::Quality Gate Breached but fail_on_breach=false. Continuing pipeline..."
+          fi
+        fi

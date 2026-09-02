@@ -2,11 +2,12 @@ name: 'Load Pipeline Configurations'
 description: 'Downloads and parses JSON configuration files for SAST and DAST'
 inputs:
   org_token:
-    description: 'PAT to access the repository containing the configuration files'
-    required: true
+    description: 'Token to access the repository containing the configuration files'
+    required: false
+    default: ''
   config_branch:
     description: 'Branch from which to download the configuration'
-    default: 'feature/defectdojo'
+    default: 'main'
 
 outputs:
   sast_matrix:
@@ -29,7 +30,7 @@ runs:
       uses: actions/checkout@v6
       with:
         repository: gha-sec-scans/orchestrator 
-        token: ${{ inputs.org_token }}
+        token: ${{ inputs.org_token || github.token }}
         ref: ${{ inputs.config_branch }}
         path: orchestrator-conf  
         sparse-checkout: .github/tool-config/
